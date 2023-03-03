@@ -10,6 +10,13 @@ def connect_to_db():
     )
 
 
+def execute_sql(db, sql):
+    mycursor = db.cursor()
+    mycursor.execute(sql)
+    myresult = mycursor.fetchall()
+    db.commit()
+    return myresult
+
 def close_db(db):
     db.close()
 

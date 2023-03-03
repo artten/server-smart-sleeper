@@ -13,6 +13,7 @@ def hello_world():
 @app.route("/test")
 def test():
     mysql = Util.connect_to_db()
-    mysql.execute("select * from test")
+    result = Util.execute_sql(mysql, "select * from test")
     Util.close_db(mysql)
+    return result
 
