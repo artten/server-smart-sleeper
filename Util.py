@@ -17,6 +17,7 @@ def execute_sql(db, sql):
     db.commit()
     return myresult
 
+
 def close_db(db):
     db.close()
 
