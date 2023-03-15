@@ -11,6 +11,7 @@ def connect_to_db():
 
 
 def execute_sql(db, sql):
+    print(sql)
     mycursor = db.cursor()
     mycursor.execute(sql)
     myresult = mycursor.fetchall()

@@ -23,9 +23,31 @@ def login():
     email = request.args.get('email')
     password = request.args.get('password')
     mysql = Util.connect_to_db()
-    result = Util.execute_sql(mysql, "select * from test where name='" + email + "' and age='" + password + "'")
+    result = Util.execute_sql(mysql, "select * from test where email='" + email + "' and password='" + password + "'")
     Util.close_db(mysql)
     if not result:
         return "no user"
+    return "ok"
+
+
+@app.route("/register")
+def register():
+    email = request.args.get('email')
+    password = request.args.get('password')
+    birthday = request.args.get('birthday')
+    gender = request.args.get('gender')
+    height = request.args.get('height')
+    weight = request.args.get('weight')
+    mysql = Util.connect_to_db()
+    mycursor = mysql.cursor()
+    sql = "INSERT INTO users (email, password, birthday, gender, height, weight)" \
+          " VALUES (%s, %s, %s, %s, %s, %s)"
+    vals = (email, password, birthday, gender, height, weight)
+    result = mycursor.execute(sql, vals)
+    mysql.commit()
+    Util.close_db(mysql)
+    print(result)
+    if not result:
+        return "somthing went wrong"
     return "ok"
 
