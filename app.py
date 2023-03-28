@@ -51,3 +51,22 @@ def register():
         return "somthing went wrong"
     return "ok"
 
+
+@app.route("/add_rating")
+def add_ratings():
+    email = request.args.get('email')
+    rate = request.args.get('rate')
+    sleep_id = request.args.get('sleep_id')
+    mysql = Util.connect_to_db()
+    mycursor = mysql.cursor()
+    sql = "INSERT INTO sleep_rating (email, sleep_id, rate)" \
+          " VALUES (%s, %s, %s)"
+    vals = (email, sleep_id, rate)
+    result = mycursor.execute(sql, vals)
+    mysql.commit()
+    Util.close_db(mysql)
+    print(result)
+    if not result:
+        return "somthing went wrong"
+    return "ok"
+

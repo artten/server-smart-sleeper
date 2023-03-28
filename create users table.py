@@ -12,18 +12,17 @@ mydb = mysql.connector.connect(
 
 mycursor = mydb.cursor()
 
-mycursor.execute("CREATE TABLE alarms (id INT AUTO_INCREMENT PRIMARY KEY,"
-                 "email VARCHAR(255) ,"
-                 "wake_date DATE,"
-                 "wake_time TIME,"
-                 "sleep_date DATE,"
-                 "sleep_time time,"
-                 "FOREIGN KEY(email) REFERENCES users(email) )")
-sql = "INSERT INTO alarms (email, wake_date, wake_time, sleep_date, sleep_time)" \
-      " VALUES (%s, %s, %s, %s, %s)"
-vals = [("artten12380@gmail.com", "2023-3-13", "22:00:00", "2023-3-14", "06:00:00"),
-        ("artten12380@gmail.com", "2023-3-15", "22:00:00", "2023-3-16", "06:00:00"),
-        ("artten12380@gmail.com", "2023-3-16", "22:00:00", "2023-3-17", "06:00:00")]
+mycursor.execute("CREATE TABLE users (email VARCHAR(255)  PRIMARY KEY,"
+                 "password VARCHAR(255),"
+                 "birthday DATE,"
+                 "gender BOOLEAN,"
+                 "height FLOAT,"
+                 "weight FLOAT )")
+sql = "INSERT INTO users (email, password, birthday, gender, height, weight)" \
+      " VALUES (%s, %s, %s, %s, %s, %s)"
+vals = [("artten12380@gmail.com", "123123123", "1996-12-13", "1", "1.69", "68"),
+        ("yosi123@gmail.com", "123123123", "2002-11-11", "1", "2.0", "78"),
+        ("marina99@gmail.com", "123123123", "1999-3-7", "0", "1.50", "54")]
 mycursor.executemany(sql, vals)
 mydb.commit()
 
