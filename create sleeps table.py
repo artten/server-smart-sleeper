@@ -16,13 +16,13 @@ mycursor.execute("CREATE TABLE sleeps (sleep INT AUTO_INCREMENT PRIMARY KEY,"
                  "email VARCHAR(255) ,"
                  "date DATE,"
                  "quality INT,"
-                 "note TEXT,"
+                 "min_before FLOAT,"
                  "FOREIGN KEY(email) REFERENCES users(email) )")
-sql = "INSERT INTO sleeps (email, date, quality, note)" \
+sql = "INSERT INTO sleeps (email, date, quality, min_before)" \
       " VALUES (%s, %s, %s, %s)"
-vals = [("artten12380@gmail.com", "2023-3-13", "1", "lol lol"),
-        ("yosi123@gmail.com", "2023-3-13", "3", "blue blue"),
-        ("marina99@gmail.com", "2023-3-13", "5", "bla bla")]
+vals = [("artten12380@gmail.com", "2023-3-13", "1", "10"),
+        ("yosi123@gmail.com", "2023-3-13", "3", "13"),
+        ("marina99@gmail.com", "2023-3-13", "5", "11.1")]
 mycursor.executemany(sql, vals)
 mydb.commit()
 
