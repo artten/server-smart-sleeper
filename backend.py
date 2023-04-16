@@ -87,5 +87,23 @@ def get_pred(arr):
     print(pred)
 
 
-arr = get_users_from_db()
-get_pred(arr)
+def check_if_sleep_registered(milliseconds):
+    mydb = mysql.connector.connect(
+    host="localhost",
+    user="artiom",
+    password="password",
+    database="smart_sleeper"
+    )
+
+    mycursor = mydb.cursor()
+    date = datetime.datetime.fromtimestamp(milliseconds / 1000.0)
+    print(date.strftime("%d-%m-%Y %H:%M:%S"))
+    mycursor.execute("select * from sleep_stages where start = " + date.strftime("%d-%m-%Y %H:%M:%S") + ";")
+    result = mycursor.fetchall()
+    # predict(ratings.to_numpy(), user_similarity, type='user')
+
+    mydb.commit()
+    mycursor.close()
+
+check_if_sleep_registered(1681616940000)
+
