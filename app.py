@@ -24,9 +24,8 @@ def test():
 @app.route("/login")
 def login():
     email = request.args.get('email')
-    password = request.args.get('password')
     mysql = Util.connect_to_db()
-    result = Util.execute_sql(mysql, "select * from users where email='" + email + "' and password='" + password + "'")
+    result = Util.execute_sql(mysql, "select * from users where email='" + email + "'")
     Util.close_db(mysql)
     if not result:
         return "no user"
