@@ -58,7 +58,8 @@ def register():
 def add_ratings():
     email = request.args.get('email')
     rate = request.args.get('rate')
-    sleep_id = request.args.get('sleep_id')
+    sleep_id = backend.get_sleep_id_for_rating(email)
+    print(sleep_id)
     mysql = Util.connect_to_db()
     mycursor = mysql.cursor()
     sql = "INSERT INTO sleep_rating (email, sleep_id, rate)" \
@@ -68,7 +69,7 @@ def add_ratings():
     mysql.commit()
     Util.close_db(mysql)
     print(result)
-    if not result:
+    if result:
         return "somthing went wrong"
     return "ok"
 
@@ -113,6 +114,7 @@ def add_sleep():
         password="password",
         database="smart_sleeper"
         )
+        print(backend.check_if_sleep_registered(int(wake_date)))
         if not backend.check_if_sleep_registered(int(wake_date)):
             mycursor = mydb.cursor()
             mycursor.execute("select start_music_sec from alarm_start where email = '" + email + "';")
@@ -133,8 +135,6 @@ def add_sleep():
             result = mycursor.fetchall()
             mycursor.close()
             sleep_id = result[0][0]
-            print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-            print(sleep_id)
             return "ok"
         else:
             return "not ok"
@@ -144,7 +144,7 @@ def add_sleep():
 
 @app.route("/add_sleep_stages")
 def add_sleep_stages():
-    print(sleep_id)
+    global sleep_id
     if sleep_id != 0:
         try:
             sleep = sleep_id
@@ -159,9 +159,9 @@ def add_sleep_stages():
             )
 
             mycursor = mydb.cursor()
-            # if start == "done":
-            #     sleep_id = 0
-            #     return "ok"
+            if start == "done":
+                sleep_id = 0
+                return "need rating"
 
             start = datetime.fromtimestamp(float(start) / 1000.0)
             start = start.strftime("%Y-%m-%d %H:%M:%S")
@@ -181,3 +181,21 @@ def add_sleep_stages():
             # print(e)
             return "not ok"
     return "not ok no try"
+
+
+@app.route("/get_alarm")
+def get_alarm():
+    email = request.args.get('email')
+    mysql = Util.connect_to_db()
+    mycursor = mysql.cursor()
+    sql = "select wake_time from alarms where email = '" + email + "'"
+    vals = email
+    result = mycursor.execute(sql)
+    result = mycursor.fetchall()
+    mysql.commit()
+    Util.close_db(mysql)
+    date
+    print(str(result[-1][0]))
+    if not result:
+        return "somthing went wrong"
+    return str(result[-1][0])

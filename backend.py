@@ -97,16 +97,43 @@ def check_if_sleep_registered(milliseconds):
 
     mycursor = mydb.cursor()
     date = datetime.datetime.fromtimestamp(milliseconds / 1000.0)
-    mycursor.execute("select * from sleep_stages where start = '" + date.strftime("%Y-%m-%d %H:%M:%S") + "';")
+    sql = "SELECT * FROM sleep_stages WHERE end = %s"
+    values = date.strftime("%Y-%m-%d %H:%M:%S")
+    mycursor.execute(sql, (values,))
     result = mycursor.fetchall()
     # predict(ratings.to_numpy(), user_similarity, type='user')
 
     mydb.commit()
+    print("result = ")
     print(result)
     print(date.strftime("%Y-%m-%d %H:%M:%S"))
     mycursor.close()
     if result:
         return 1
     return 0
+
+
+def get_sleep_id_for_rating(email):
+    mydb = mysql.connector.connect(
+    host="localhost",
+    user="artiom",
+    password="password",
+    database="smart_sleeper"
+    )
+
+    mycursor = mydb.cursor()
+    sql = "SELECT max(sleep) FROM sleeps WHERE email = %s"
+    values = email
+    mycursor.execute(sql, (values,))
+    result = mycursor.fetchall()
+    # predict(ratings.to_numpy(), user_similarity, type='user')
+
+    mydb.commit()
+    mycursor.close()
+    if result:
+        return result[0][0]
+    return 0
+
+
 
 
