@@ -194,8 +194,17 @@ def get_alarm():
     result = mycursor.fetchall()
     mysql.commit()
     Util.close_db(mysql)
-    date
+    mysql = Util.connect_to_db()
+    mycursor = mysql.cursor()
     print(str(result[-1][0]))
+    answer = str(result[-1][0])
+    sql = "select start_music_sec from alarm_start where email = '" + email + "'"
+    mycursor.execute(sql)
+    result = mycursor.fetchall()
+    mysql.commit()
+    Util.close_db(mysql)
+    print(str(result[-1][0]))
+    answer = answer + "." + str(result[-1][0]) + ","
     if not result:
         return "somthing went wrong"
-    return str(result[-1][0])
+    return answer
