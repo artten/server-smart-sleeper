@@ -186,18 +186,11 @@ def add_sleep_stages():
 @app.route("/get_alarm")
 def get_alarm():
     email = request.args.get('email')
+    answer = backend.get_wake_time(email)
+    if answer == 'not':
+        return 'not'
     mysql = Util.connect_to_db()
     mycursor = mysql.cursor()
-    sql = "select wake_time from alarms where email = '" + email + "'"
-    vals = email
-    result = mycursor.execute(sql)
-    result = mycursor.fetchall()
-    mysql.commit()
-    Util.close_db(mysql)
-    mysql = Util.connect_to_db()
-    mycursor = mysql.cursor()
-    print(str(result[-1][0]))
-    answer = str(result[-1][0])
     sql = "select start_music_sec from alarm_start where email = '" + email + "'"
     mycursor.execute(sql)
     result = mycursor.fetchall()

@@ -1,9 +1,10 @@
 from datetime import timedelta
 import mysql.connector
-import pandas as pd
+import Util
 import numpy as np
-import datetime
 from sklearn.metrics.pairwise import pairwise_distances
+from datetime import date
+import datetime
 
 
 def get_when_to_start_sleep(wake_up_time):
@@ -133,6 +134,93 @@ def get_sleep_id_for_rating(email):
     if result:
         return result[0][0]
     return 0
+
+
+def get_wake_time(email):
+    today = date.today()
+
+    d1 = today.strftime("%d/%m/%Y")
+    now = datetime.datetime.now()
+    mysql = Util.connect_to_db()
+    mycursor = mysql.cursor()
+
+    sql = "select * from schedule where " \
+          "email = '" + email + "'" \
+          " and date = '" + d1 + "'" \
+          "group by id"
+    mycursor.execute(sql)
+    result = mycursor.fetchall()
+    mysql.commit()
+    Util.close_db(mysql)
+    # return str(result[-1][0])
+    print(result)
+    if len(result) > 0:
+        if not result[0][3]:
+            return "not"
+        else:
+            if str(now.hour) > result[0][4]:
+                tomorrow = today + timedelta(1)
+                print(tomorrow.weekday())
+                d2 = tomorrow.strftime("%d/%m/%Y")
+                mysql = Util.connect_to_db()
+                mycursor = mysql.cursor()
+
+                sql = "select * from schedule where " \
+                      "email = '" + email + "'" \
+                      " and date = '" + d2 + "'" \
+                      "group by id"
+                mycursor.execute(sql)
+                result = mycursor.fetchall()
+                mysql.commit()
+                Util.close_db(mysql)
+                if len(result) > 0:
+                    if not result[0][3]:
+                        return "not"
+                    else:
+                        return result[0][4]
+            else:
+                return result[0][4]
+    tomorrow = today + timedelta(1)
+    day_of_the_week = get_day_of_the_week((tomorrow.weekday() + 1) % 7)
+    mysql = Util.connect_to_db()
+    mycursor = mysql.cursor()
+
+    sql = "select * from schedule where " \
+          "email = '" + email + "'" \
+          " and day = '" + day_of_the_week + "'" \
+          "group by id"
+    mycursor.execute(sql)
+    result = mycursor.fetchall()
+    mysql.commit()
+    Util.close_db(mysql)
+
+    if len(result) > 0:
+        if not result[0][3]:
+            return "not"
+        else:
+            mysql = Util.connect_to_db()
+            mycursor = mysql.cursor()
+            day_of_the_week = get_day_of_the_week((tomorrow.weekday() + 2) % 7)
+            sql = "select * from schedule where " \
+                  "email = '" + email + "'" \
+                  " and day = '" + day_of_the_week + "'" \
+                  "group by id"
+            mycursor.execute(sql)
+            result = mycursor.fetchall()
+            mysql.commit()
+            Util.close_db(mysql)
+            if not result[0][3]:
+                return "not"
+            else:
+                return result[0][4]
+    return "not"
+
+def get_day_of_the_week(day):
+    weekdays = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday",
+                "Friday", "Saturday"]
+    return weekdays[day]
+
+
 
 
 
