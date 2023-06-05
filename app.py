@@ -77,26 +77,28 @@ def add_ratings():
 @app.route("/set_alarm")
 def set_alarm():
     email = request.args.get('email')
-    wake_time = request.args.get('wake_time')
+    day = request.args.get('day')
+    action = request.args.get('action')
+    hour = request.args.get('hour')
+    date = request.args.get('date')
     try:
-        today = date.today()
-        sleep_time = datetime.strptime(wake_time, '%H:%M:%S') + timedelta(hours=-8)
-        tomorrow = today + timedelta(1)
-        wake_date = tomorrow
-        sleep_date = today
-        sleep_time = str(sleep_time.time())
+        # today = date.today()
+        # sleep_time = datetime.strptime(wake_time, '%H:%M:%S') + timedelta(hours=-8)
+        # tomorrow = today + timedelta(1)
+        # wake_date = tomorrow
+        # sleep_date = today
+        # sleep_time = str(sleep_time.time())
         mysql = Util.connect_to_db()
         mycursor = mysql.cursor()
 
-        sql = "INSERT INTO alarms (email, wake_date, wake_time, sleep_date, sleep_time)" \
+        sql = "INSERT INTO schedule (email, day, action, hour, date)" \
               " VALUES (%s, %s, %s, %s, %s)"
-        vals = (email, wake_date, wake_time, sleep_date, sleep_time)
+        vals = (email, day, action, hour, date)
         result = mycursor.execute(sql, vals)
         mysql.commit()
         Util.close_db(mysql)
         print(result)
         return "ok"
-
     except:
         return "somthing went wrong"
 
