@@ -6,6 +6,7 @@ import numpy as np
 import math
 from fastdtw import dtw
 from sklearn.metrics.pairwise import pairwise_distances
+from sklearn.cluster import KMeans
 
 
 def get_sleep_of_user_from_db(email):
@@ -18,7 +19,7 @@ def get_sleep_of_user_from_db(email):
 
     mycursor = mydb.cursor()
 
-    mycursor.execute(f"SELECT s.sleep, s.email, cast(s.quality as unsigned), cast((MIN(time_to_sec(ss.start)/60)) as unsigned), cast((MAX(time_to_sec(ss.end)/60)) as unsigned) FROM smart_sleeper.sleeps as s right join smart_sleeper.sleep_stages as ss on ss.sleep = s.sleep where s.email = \"{email}\" group by s.sleep;")
+    mycursor.execute(f"SELECT s.sleep, s.email, cast(COALESCE(sr.rate, 3) as float), cast((MIN(time_to_sec(ss.start)/60)) as unsigned), cast((MAX(time_to_sec(ss.end)/60)) as unsigned) FROM smart_sleeper.sleeps as s right join smart_sleeper.sleep_stages as ss on ss.sleep = s.sleep LEFT JOIN smart_sleeper.sleep_rating AS sr ON sr.sleep_id = s.sleep where s.email = \"{email}\" group by s.sleep;")
     result = mycursor.fetchall()
     # predict(ratings.to_numpy(), user_similarity, type='user')
 
@@ -28,6 +29,7 @@ def get_sleep_of_user_from_db(email):
     mycursor.close()
 
     return arr
+
 
 # return true or false if h1 is less than "time" minutes from h2
 def two_hours_close(h1, h2, time):
@@ -40,13 +42,35 @@ def two_hours_close(h1, h2, time):
     return False
 
 
+def dist_between_hours(h1, h2):
+    h1 = int(h1)
+    h2 = int(h2)
+    dist = max(h1, h2) - min(h1, h2)
+    dist2 = (min(h1, h2) + 1440) - max(h1, h2)
+    return min(dist2, dist)
+
+
+def mass_center(data):
+    kmeans = KMeans(init="random", n_clusters=10, tol=1)
+    kmeans.fit(data.reshape(-1, 1))
+    labels = kmeans.labels_
+    centers = kmeans.cluster_centers_
+    unique, counts = np.unique(labels, return_counts=True)
+    result = {}
+    for i in range(len(unique)):
+        result[centers[unique[i]]] = counts[i]
+    return result
+
+
 # given sleep start time of user recommend time for waking up receive the user sleep records, for the sake of
 # convenience the format for a record is: start time, end time , rating
 def recommend_wake_time(start_time, records):
     #mask = two_hours_close(records[:, 3], start_time, 120)
     #print(mask)
     relevant = []
+
     for i in range(len(records)):
+        print(records[i][4])
         if two_hours_close(records[i][3], start_time, 120):
             relevant.append(records[i])
 
@@ -55,11 +79,41 @@ def recommend_wake_time(start_time, records):
     print(relevant)
     if len(relevant) == 0:
         return start_time + 480
+    return ((np.array(relevant[:, 4]).astype(float) * np.array(relevant[:, 2]).astype(float)).sum()) / (np.array(relevant[:, 2]).astype(float).sum())
 
-    return ((np.array(relevant[:, 4]).astype(int) * np.array(relevant[:, 2]).astype(int)).sum()) / (np.array(relevant[:, 2]).astype(int).sum())
+
+# given sleep end time of user recommend time for starting to sleep, receive the user sleep records, for the sake of
+# convenience the format for a record is: start time, end time , rating
+def recommend_sleep_time(wake_time, records):
+    #mask = two_hours_close(records[:, 3], start_time, 120)
+    #print(mask)
+    relevant = []
+    for i in range(len(records)):
+        if two_hours_close(records[i][4], wake_time, 120):
+            relevant.append(records[i])
+
+    #relevant = (records[mask])[0]
+    relevant = np.array(relevant)
+    print(relevant)
+    if len(relevant) == 0:
+        time = wake_time - 480
+        if time < 0:
+            time += 1440
+        return time
+    return ((np.array(relevant[:, 3]).astype(float) * np.array(relevant[:, 2]).astype(float)).sum()) / (np.array(relevant[:, 2]).astype(float).sum())
 
 
-# def dist_from_hours()
+# this similarity is not symmetric
+def hours_array_sim(hours1, hours2):
+    div = len(hours1)
+    sim_score = 0
+    for k1, val1 in hours1.items():
+        sum_val = 0
+        for k2, val2 in hours2.items():
+            if two_hours_close(k1, k2, 60):
+                sum_val += (1 - (dist_between_hours(k1, k2) / 60)) * (min((val1 / val2), 1))
+        sim_score += min(1, sum_val) / div
+    return sim_score
 
 
 class Recommender:
@@ -76,7 +130,17 @@ class Recommender:
         return users[:, 1:5]
 
     def organize_sleep_start(self, sleeps):
-        arr = (np.array([sleeps[sleeps[:, 1] == email][:, 3] for email in self.users_list])).astype(int)
+        arr = []
+
+        for email in self.users_list:
+            #arr[i] = sleeps[sleeps[:, 1] == email][:, 3]
+            hours = np.array(sleeps[sleeps[:, 1] == email][:, 3]).astype(int)
+            if len(hours) < 10:
+                arr.append({val: 1 for val in hours})
+            else:
+                arr.append(mass_center(hours))
+
+        arr = np.array(arr, dtype=object)
         return arr
 
     # receive data of 2 users and calc similarity
@@ -119,12 +183,14 @@ class Recommender:
         weights = np.array([1, 3])
         # first organize the data into structure that can be sent to
         content_mat = self.organize_user(users)
+        print("con")
         # sleep has many factors that can be considered, start time, end time, and how long the sleep was,
         # each can be considered. for now sleep1 is start time
-        #sleep_mat1 = self.organize_sleep_start(sleep_records)
+        sleep_mat1 = self.organize_sleep_start(sleep_records)
+        print(sleep_mat1)
 
         self.content_sim = self.calc_similarity(content_mat, self.content_sim_between_2users)
-        # self.sleep1_sim = self.calc_similarity(sleep_mat1, dtw)
+        # self.sleep_start_sim = self.calc_similarity(sleep_mat1, dtw)
 
         # self.similarity = (self.content_sim * weights[0] + self.sleep1_sim * weights[1]) / np.sum(weights)
         self.similarity = self.content_sim
