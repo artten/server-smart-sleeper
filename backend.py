@@ -215,10 +215,47 @@ def get_wake_time(email):
                 return result[0][4]
     return "not"
 
+
 def get_day_of_the_week(day):
     weekdays = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday",
                 "Friday", "Saturday"]
     return weekdays[day]
+
+def get_all_futere_alarms(email):
+    mysql = Util.connect_to_db()
+    mycursor = mysql.cursor()
+    sql = "select * from schedule where email = '" + email + "'"
+    mycursor.execute(sql)
+    result = mycursor.fetchall()
+    mysql.commit()
+    Util.close_db(mysql)
+    answer = ""
+    weekdays = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday",
+                "Friday", "Saturday"]
+    today = datetime.datetime.now()
+    for r in result:
+        if r[2] in weekdays:
+            answer = answer  + r[2] + "," + str(r[3]) + "," + r[4] + "," + r[5] + '&'
+        else:
+            if int(today.year) < int(r[5].split("/")[2]):
+                answer = answer  + r[2] + "," + str(r[3]) + "," + r[4] + "," + r[5] + '&'
+            if int(today.year) == int(r[5].split("/")[2]):
+                if int(today.month) < int(r[5].split("/")[1]):
+                    answer = answer  + r[2] + "," + str(r[3]) + "," + r[4] + "," + r[5] + '&'
+                if int(today.month) == int(r[5].split("/")[1]):
+                    if int(today.day) < int(r[5].split("/")[0]):
+                        answer = answer  + r[2] + "," + str(r[3]) + "," + r[4] + "," + r[5] + '&'
+                    if int(today.day) == int(r[5].split("/")[0]):
+                        if r[4] != '0':
+                            if int(today.hour) < int(r[4].split(":")[0]):
+                                answer = answer  + r[2] + "," + str(r[3]) + "," + r[4] + "," + r[5] + '&'
+                            if int(today.hour) == int(r[4].split(":")[0]):
+                                if int(today.minute) < int(r[4].split(":")[1]):
+                                    answer = answer  + r[2] + "," + str(r[3]) + "," + r[4] + "," + r[5] + '&'
+                                if int(today.minute) == int(r[4].split(":")[1]):
+                                    if int(today.second) < int(r[4].split(":")[2]):
+                                        answer = answer  + r[2] + "," + str(r[3]) + "," + r[4] + "," + r[5] + '&'
+    return answer
 
 
 

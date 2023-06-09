@@ -203,3 +203,8 @@ def get_alarm():
     if not result:
         return "somthing went wrong"
     return answer
+
+@app.route("/get_all_alarms")
+def get_all_alarms():
+    email = request.args.get('email')
+    return backend.get_all_futere_alarms(email)
