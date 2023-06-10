@@ -208,3 +208,9 @@ def get_alarm():
 def get_all_alarms():
     email = request.args.get('email')
     return backend.get_all_futere_alarms(email)
+
+
+@app.route("/get_all_sleeps")
+def get_all_sleeps():
+    email = request.args.get('email')
+    return backend.get_all_qulity_of_sleep(email)

@@ -221,6 +221,7 @@ def get_day_of_the_week(day):
                 "Friday", "Saturday"]
     return weekdays[day]
 
+
 def get_all_futere_alarms(email):
     mysql = Util.connect_to_db()
     mycursor = mysql.cursor()
@@ -235,30 +236,70 @@ def get_all_futere_alarms(email):
     today = datetime.datetime.now()
     for r in result:
         if r[2] in weekdays:
-            answer = answer  + r[2] + "," + str(r[3]) + "," + r[4] + "," + r[5] + '&'
+            answer = answer + r[2] + "," + str(r[3]) + "," + r[4] + "," + r[5] + '&'
         else:
             if int(today.year) < int(r[5].split("/")[2]):
-                answer = answer  + r[2] + "," + str(r[3]) + "," + r[4] + "," + r[5] + '&'
+                answer = answer + r[2] + "," + str(r[3]) + "," + r[4] + "," + r[5] + '&'
             if int(today.year) == int(r[5].split("/")[2]):
                 if int(today.month) < int(r[5].split("/")[1]):
-                    answer = answer  + r[2] + "," + str(r[3]) + "," + r[4] + "," + r[5] + '&'
+                    answer = answer + r[2] + "," + str(r[3]) + "," + r[4] + "," + r[5] + '&'
                 if int(today.month) == int(r[5].split("/")[1]):
                     if int(today.day) < int(r[5].split("/")[0]):
-                        answer = answer  + r[2] + "," + str(r[3]) + "," + r[4] + "," + r[5] + '&'
+                        answer = answer + r[2] + "," + str(r[3]) + "," + r[4] + "," + r[5] + '&'
                     if int(today.day) == int(r[5].split("/")[0]):
                         if r[4] != '0':
                             if int(today.hour) < int(r[4].split(":")[0]):
-                                answer = answer  + r[2] + "," + str(r[3]) + "," + r[4] + "," + r[5] + '&'
+                                answer = answer + r[2] + "," + str(r[3]) + "," + r[4] + "," + r[5] + '&'
                             if int(today.hour) == int(r[4].split(":")[0]):
                                 if int(today.minute) < int(r[4].split(":")[1]):
-                                    answer = answer  + r[2] + "," + str(r[3]) + "," + r[4] + "," + r[5] + '&'
+                                    answer = answer + r[2] + "," + str(r[3]) + "," + r[4] + "," + r[5] + '&'
                                 if int(today.minute) == int(r[4].split(":")[1]):
                                     if int(today.second) < int(r[4].split(":")[2]):
-                                        answer = answer  + r[2] + "," + str(r[3]) + "," + r[4] + "," + r[5] + '&'
+                                        answer = answer + r[2] + "," + str(r[3]) + "," + r[4] + "," + r[5] + '&'
     return answer
 
 
+def get_all_qulity_of_sleep(email):
+    mysql = Util.connect_to_db()
+    mycursor = mysql.cursor()
+    sql = "select sleep from sleeps where email = '" + email + "'"
+    mycursor.execute(sql)
+    sleep_id = mycursor.fetchall()
+    mysql.commit()
+    Util.close_db(mysql)
+    ans = ""
+    for id in sleep_id:
+        tmp = get_sleep_str_to_send(id[0])
+        if tmp != None:
+            ans = ans +tmp
+    return ans
 
 
 
-
+def get_sleep_str_to_send(sleep_id):
+    mysql = Util.connect_to_db()
+    mycursor = mysql.cursor()
+    sql = "select date from sleeps where sleep = " + str(sleep_id) + ""
+    mycursor.execute(sql)
+    date = mycursor.fetchall()
+    mysql.commit()
+    Util.close_db(mysql)
+    mysql = Util.connect_to_db()
+    mycursor = mysql.cursor()
+    sql = "select min(start) from sleep_stages where sleep = " + str(sleep_id) + ""
+    mycursor.execute(sql)
+    start = mycursor.fetchall()
+    mysql.commit()
+    Util.close_db(mysql)
+    mysql = Util.connect_to_db()
+    mycursor = mysql.cursor()
+    sql = "select max(end) from sleep_stages where sleep = " + str(sleep_id) + ""
+    mycursor.execute(sql)
+    end = mycursor.fetchall()
+    mysql.commit()
+    Util.close_db(mysql)
+    datetime.datetime.minute
+    if start[0][0] != None and end[0][0] != None:
+        return str(date[0][0].day) + "/" + str(date[0][0].month) + "/" + str(date[0][0].year) + ","\
+            + start[0][0].strftime("%H:%M:%S") + "," \
+            + end[0][0].strftime("%H:%M:%S") + "&"
