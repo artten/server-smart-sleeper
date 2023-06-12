@@ -214,3 +214,19 @@ def get_all_alarms():
 def get_all_sleeps():
     email = request.args.get('email')
     return backend.get_all_qulity_of_sleep(email)
+
+
+@app.route("/get_setting")
+def get_setting():
+    email = request.args.get('email')
+    return backend.get_settings(email)
+
+@app.route("/set_setting")
+def set_setting():
+    email = request.args.get('email')
+    birthday = request.args.get('birthday')
+    gender = request.args.get('gender')
+    height = request.args.get('height')
+    weight = request.args.get('weight')
+    backend.update_settings(email, birthday, gender, height, weight)
+    return "ok"

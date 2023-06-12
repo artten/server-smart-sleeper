@@ -303,3 +303,38 @@ def get_sleep_str_to_send(sleep_id):
         return str(date[0][0].day) + "/" + str(date[0][0].month) + "/" + str(date[0][0].year) + ","\
             + start[0][0].strftime("%H:%M:%S") + "," \
             + end[0][0].strftime("%H:%M:%S") + "&"
+
+
+def get_settings(email):
+    mysql = Util.connect_to_db()
+    mycursor = mysql.cursor()
+    sql = "select birthday,gender,height,weight from users where email = '" + email + "'"
+    mycursor.execute(sql)
+    ret = mycursor.fetchall()
+    mysql.commit()
+    Util.close_db(mysql)
+    gender = "male"
+    if ret[0][1] == 1:
+        gender = "female"
+    return str(ret[0][0].day) + "/" + str(ret[0][0].month) + "/" + str(ret[0][0].year)  \
+        + "&" + gender + "&" + str(ret[0][2]) + "&" + str(ret[0][3])
+
+
+def update_settings(email, birthday, gender, height, weight):
+    mysql = Util.connect_to_db()
+    mycursor = mysql.cursor()
+    birth = datetime.datetime.strptime(birthday, '%d/%m/%Y').date()
+    ge = 1
+    if gender == "female":
+        ge = 0
+    print(type(birth.strftime("%Y-%m-%d")))
+    sql = "update users set birthday = '" + birth.strftime("%Y-%m-%d") + "'" \
+          + ", gender = " + str(ge) + "" \
+          + ", height = " + height + "" \
+          + ", weight = " + weight + "" \
+          + " where email = '" + email + "'"
+    mycursor.execute(sql)
+    ret = mycursor.fetchall()
+    mysql.commit()
+    Util.close_db(mysql)
+
