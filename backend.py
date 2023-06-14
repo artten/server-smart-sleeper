@@ -234,7 +234,8 @@ print(rec.predict_given_start_time(1400, "artten12380@gmail.com"))
 print(rec.predict_given_end_time(1431, "artten12380@gmail.com"))
 calc_sleep_quality(4)
 #get_pred(arr)
-=======
+
+
 def check_if_sleep_registered(milliseconds):
     mydb = mysql.connector.connect(
     host="localhost",
