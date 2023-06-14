@@ -137,7 +137,6 @@ def calc_sleep_quality(sleep_id):
     hours_of_sleep = mycursor.fetchall()[0][0]
     mycursor.execute(f"SELECT s.sleep, s.email, cast((MIN(time_to_sec(ss.start)/60)) as unsigned), cast((MAX(time_to_sec(ss.end)/60)) as unsigned) FROM smart_sleeper.sleeps as s right join smart_sleeper.sleep_stages as ss on ss.sleep = s.sleep where s.email = \"{email}\" AND s.date >= DATE_SUB((select sle.date from sleeps sle where sle.sleep = \"{sleep_id}\"), INTERVAL 8 DAY) And s.date <= (select sle.date from sleeps sle where sle.sleep = \"{sleep_id}\") group by s.sleep;")
     records = mycursor.fetchall()
-    print(records)
 
     count_start = 0
     count_end = 0
@@ -189,7 +188,37 @@ def calc_sleep_quality(sleep_id):
         quality += 2
     elif percent_rem >= 15:
         quality += ((percent_rem - 15) / 8) * 2
-    return quality
+    sql = "UPDATE sleeps SET quality = %s WHERE sleep = %s"
+    val = (min(int(quality) + 1, 10), sleep_id)
+    mycursor.execute(sql, val)
+    mydb.commit()
+    mycursor.close()
+
+
+# the app asks if it should start waking up the user, the server returns how many minutes before starting the alarm
+# 1 awake, 2 sleep, 3 out-of-bed, 4 light sleep, 5 deep sleep, 6 rem
+def start_awakening(now, wake_time, alarm_start, time_from_rem):
+    rem_time = dist_between_hours(now, time_from_rem)
+    if rem_time >= 25:
+        return alarm_start
+    return min(alarm_start + rem_time, wake_time)
+
+def get_alert_time(sleep_id, alarm_start):
+    mydb = mysql.connector.connect(
+        host="localhost",
+        user="root",
+        password="223333",
+        database="smart_sleeper"
+    )
+
+    mycursor = mydb.cursor()
+
+    mycursor.execute(f"SELECT type AS appearance_count FROM sleep_stages WHERE sleep = \"{sleep_id}\" AND end >= DATE_SUB(NOW(), INTERVAL 10 MINUTE) GROUP BY type ORDER BY appearance_count DESC LIMIT 1;")
+    type = int(mycursor.fetchall()[0][0])
+    mycursor.close()
+    if type == 5 or type == 6:
+        return alarm_start + 10
+    return alarm_start
 
 
 arr = get_users_from_db()
@@ -200,5 +229,6 @@ rec = Recommender()
 rec.train(get_users_from_db(), get_sleep_from_db())
 print("given time 1400 predicted time:")
 print(rec.predict_given_start_time(1400, "artten12380@gmail.com"))
+print(rec.predict_given_end_time(1431, "artten12380@gmail.com"))
 calc_sleep_quality(4)
 #get_pred(arr)

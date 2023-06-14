@@ -94,7 +94,6 @@ def recommend_sleep_time(wake_time, records):
 
     #relevant = (records[mask])[0]
     relevant = np.array(relevant)
-    print(relevant)
     if len(relevant) == 0:
         time = wake_time - 480
         if time < 0:
@@ -200,8 +199,6 @@ class Recommender:
         print(self.users_list)
 
     def predict_given_start_time(self, start_time, user):
-        # get records of user from database, for continuity
-        pass
         recommended_end_time = np.array([])
         index = (np.where(self.users_list == user)[0])[0]
         # get records of the self.recNum users with highest similarity to user
@@ -210,4 +207,15 @@ class Recommender:
         sum_hour = 0
         for ind in highest_sim_index:
             sum_hour += recommend_wake_time(start_time, get_sleep_of_user_from_db((self.users_list[highest_sim_index])[0]))
+        return sum_hour / self.recNum
+
+    def predict_given_end_time(self, end_time, user):
+        recommended_end_time = np.array([])
+        index = (np.where(self.users_list == user)[0])[0]
+        # get records of the self.recNum users with highest similarity to user
+        highest_sim_index = np.flip(np.argsort(self.similarity[index]))[:self.recNum]
+        # highest_sim = self.similarity[index][highest_sim_index]
+        sum_hour = 0
+        for ind in highest_sim_index:
+            sum_hour += recommend_sleep_time(end_time, get_sleep_of_user_from_db((self.users_list[highest_sim_index])[0]))
         return sum_hour / self.recNum
