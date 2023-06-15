@@ -1,10 +1,11 @@
 from datetime import timedelta
 import mysql.connector
-import pandas as pd
+import Util
 import numpy as np
-import datetime
 from sklearn.metrics.pairwise import pairwise_distances
 from SRAI import *
+from datetime import date
+import datetime
 
 
 def get_when_to_start_sleep(wake_up_time):
@@ -24,8 +25,8 @@ def get_when_to_start_music(wake_up_time):
 def get_users_from_db():
     mydb = mysql.connector.connect(
         host="localhost",
-        user="root",
-        password="223333",
+        user="artiom",
+        password="password",
         database="smart_sleeper"
     )
 
@@ -52,8 +53,8 @@ def get_users_from_db():
 def get_reviews_from_db():
     mydb = mysql.connector.connect(
         host="localhost",
-        user="root",
-        password="223333",
+        user="artiom",
+        password="password",
         database="smart_sleeper"
     )
 
@@ -86,9 +87,8 @@ def get_sleep_from_db():
     )
 
     mycursor = mydb.cursor()
-    # SELECT s.sleep, s.email, cast(s.quality as float), cast((MIN(time_to_sec(ss.start)/60)) as unsigned), cast((MAX(time_to_sec(ss.end)/60)) as unsigned) FROM smart_sleeper.sleeps as s right join smart_sleeper.sleep_stages as ss on ss.sleep = s.sleep group by s.sleep;
-    # mycursor.execute("SELECT s.sleep, s.email, COALESCE(sr.rate, 3), cast((MIN(time_to_sec(ss.start)/60)) as unsigned), cast((MAX(time_to_sec(ss.end)/60)) as unsigned) FROM smart_sleeper.sleeps as s right join smart_sleeper.sleep_stages as ss on ss.sleep = s.sleep LEFT JOIN smart_sleeper.sleep_rating AS sr ON sr.sleep_id = s.sleep group by s.sleep;")
-    mycursor.execute("SELECT s.sleep, s.email, cast(s.quality as float), cast((MIN(time_to_sec(ss.start)/60)) as unsigned), cast((MAX(time_to_sec(ss.end)/60)) as unsigned) FROM smart_sleeper.sleeps as s right join smart_sleeper.sleep_stages as ss on ss.sleep = s.sleep group by s.sleep;")
+
+    mycursor.execute("SELECT s.sleep, s.email, COALESCE(sr.rate, 3), cast((MIN(time_to_sec(ss.start)/60)) as unsigned), cast((MAX(time_to_sec(ss.end)/60)) as unsigned) FROM smart_sleeper.sleeps as s right join smart_sleeper.sleep_stages as ss on ss.sleep = s.sleep LEFT JOIN smart_sleeper.sleep_rating AS sr ON sr.sleep_id = s.sleep group by s.sleep;")
     result = mycursor.fetchall()
     # predict(ratings.to_numpy(), user_similarity, type='user')
 
@@ -117,12 +117,13 @@ def get_pred(arr):
     print(pred)
 
 
+
 def calc_sleep_quality(sleep_id):
     quality = 0
     mydb = mysql.connector.connect(
         host="localhost",
-        user="root",
-        password="223333",
+        user="artiom",
+        password="password",
         database="smart_sleeper"
     )
 
@@ -204,7 +205,6 @@ def start_awakening(now, wake_time, alarm_start, time_from_rem):
         return alarm_start
     return min(alarm_start + rem_time, wake_time)
 
-
 def get_alert_time(sleep_id, alarm_start):
     mydb = mysql.connector.connect(
         host="localhost",
@@ -223,42 +223,6 @@ def get_alert_time(sleep_id, alarm_start):
     return alarm_start
 
 
-def update_alarm_start(rate, user):
-    if rate == 3:
-        return
-    mydb = mysql.connector.connect(
-        host="localhost",
-        user="root",
-        password="223333",
-        database="smart_sleeper"
-    )
-    mycursor = mydb.cursor()
-
-    mycursor.execute(f"select start_music_sec from alarm_start a where a.email = \"{user}\";")
-    start_music = int(mycursor.fetchall()[0][0])
-    if rate == 1:
-        update = -600
-    if rate == 1.5:
-        update = -300
-    if rate == 2:
-        update = -180
-    if rate == 2.5:
-        update = -60
-    if rate == 3.5:
-        update = 60
-    if rate == 4:
-        update = 180
-    if rate == 4.5:
-        update = 300
-    if rate == 5:
-        update = 600
-
-    sql = "UPDATE alarm_start SET start_music_sec = %s WHERE email = %s"
-    val = (max(start_music + update, 0), user)
-    mycursor.execute(sql, val)
-    mydb.commit()
-    mycursor.close()
-
 arr = get_users_from_db()
 print(get_users_from_db())
 print(get_sleep_from_db())
@@ -268,5 +232,256 @@ rec.train(get_users_from_db(), get_sleep_from_db())
 print("given time 1400 predicted time:")
 print(rec.predict_given_start_time(1400, "artten12380@gmail.com"))
 print(rec.predict_given_end_time(1431, "artten12380@gmail.com"))
-update_alarm_start(2.5, "artten12380@gmail.com")
 calc_sleep_quality(4)
+#get_pred(arr)
+=======
+def check_if_sleep_registered(milliseconds):
+    mydb = mysql.connector.connect(
+    host="localhost",
+    user="artiom",
+    password="password",
+    database="smart_sleeper"
+    )
+
+    mycursor = mydb.cursor()
+    date = datetime.datetime.fromtimestamp(milliseconds / 1000.0)
+    sql = "SELECT * FROM sleep_stages WHERE end = %s"
+    values = date.strftime("%Y-%m-%d %H:%M:%S")
+    mycursor.execute(sql, (values,))
+    result = mycursor.fetchall()
+    # predict(ratings.to_numpy(), user_similarity, type='user')
+
+    mydb.commit()
+    print("result = ")
+    print(result)
+    print(date.strftime("%Y-%m-%d %H:%M:%S"))
+    mycursor.close()
+    if result:
+        return 1
+    return 0
+
+
+def get_sleep_id_for_rating(email):
+    mydb = mysql.connector.connect(
+    host="localhost",
+    user="artiom",
+    password="password",
+    database="smart_sleeper"
+    )
+
+    mycursor = mydb.cursor()
+    sql = "SELECT max(sleep) FROM sleeps WHERE email = %s"
+    values = email
+    mycursor.execute(sql, (values,))
+    result = mycursor.fetchall()
+    # predict(ratings.to_numpy(), user_similarity, type='user')
+
+    mydb.commit()
+    mycursor.close()
+    if result:
+        return result[0][0]
+    return 0
+
+
+def get_wake_time(email):
+    today = date.today()
+
+    d1 = today.strftime("%d/%m/%Y")
+    now = datetime.datetime.now()
+    mysql = Util.connect_to_db()
+    mycursor = mysql.cursor()
+
+    sql = "select * from schedule where " \
+          "email = '" + email + "'" \
+          " and date = '" + d1 + "'" \
+          "group by id"
+    mycursor.execute(sql)
+    result = mycursor.fetchall()
+    mysql.commit()
+    Util.close_db(mysql)
+    # return str(result[-1][0])
+    print(result)
+    if len(result) > 0:
+        if not result[0][3]:
+            return "not"
+        else:
+            if str(now.hour) > result[0][4]:
+                tomorrow = today + timedelta(1)
+                print(tomorrow.weekday())
+                d2 = tomorrow.strftime("%d/%m/%Y")
+                mysql = Util.connect_to_db()
+                mycursor = mysql.cursor()
+
+                sql = "select * from schedule where " \
+                      "email = '" + email + "'" \
+                      " and date = '" + d2 + "'" \
+                      "group by id"
+                mycursor.execute(sql)
+                result = mycursor.fetchall()
+                mysql.commit()
+                Util.close_db(mysql)
+                if len(result) > 0:
+                    if not result[0][3]:
+                        return "not"
+                    else:
+                        return result[0][4]
+            else:
+                return result[0][4]
+    tomorrow = today + timedelta(1)
+    day_of_the_week = get_day_of_the_week((tomorrow.weekday() + 1) % 7)
+    mysql = Util.connect_to_db()
+    mycursor = mysql.cursor()
+
+    sql = "select * from schedule where " \
+          "email = '" + email + "'" \
+          " and day = '" + day_of_the_week + "'" \
+          "group by id"
+    mycursor.execute(sql)
+    result = mycursor.fetchall()
+    mysql.commit()
+    Util.close_db(mysql)
+
+    if len(result) > 0:
+        if not result[0][3]:
+            return "not"
+        else:
+            mysql = Util.connect_to_db()
+            mycursor = mysql.cursor()
+            day_of_the_week = get_day_of_the_week((tomorrow.weekday() + 2) % 7)
+            sql = "select * from schedule where " \
+                  "email = '" + email + "'" \
+                  " and day = '" + day_of_the_week + "'" \
+                  "group by id"
+            mycursor.execute(sql)
+            result = mycursor.fetchall()
+            mysql.commit()
+            Util.close_db(mysql)
+            if not result[0][3]:
+                return "not"
+            else:
+                return result[0][4]
+    return "not"
+
+
+def get_day_of_the_week(day):
+    weekdays = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday",
+                "Friday", "Saturday"]
+    return weekdays[day]
+
+
+def get_all_futere_alarms(email):
+    mysql = Util.connect_to_db()
+    mycursor = mysql.cursor()
+    sql = "select * from schedule where email = '" + email + "'"
+    mycursor.execute(sql)
+    result = mycursor.fetchall()
+    mysql.commit()
+    Util.close_db(mysql)
+    answer = ""
+    weekdays = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday",
+                "Friday", "Saturday"]
+    today = datetime.datetime.now()
+    for r in result:
+        if r[2] in weekdays:
+            answer = answer + r[2] + "," + str(r[3]) + "," + r[4] + "," + r[5] + '&'
+        else:
+            if int(today.year) < int(r[5].split("/")[2]):
+                answer = answer + r[2] + "," + str(r[3]) + "," + r[4] + "," + r[5] + '&'
+            if int(today.year) == int(r[5].split("/")[2]):
+                if int(today.month) < int(r[5].split("/")[1]):
+                    answer = answer + r[2] + "," + str(r[3]) + "," + r[4] + "," + r[5] + '&'
+                if int(today.month) == int(r[5].split("/")[1]):
+                    if int(today.day) < int(r[5].split("/")[0]):
+                        answer = answer + r[2] + "," + str(r[3]) + "," + r[4] + "," + r[5] + '&'
+                    if int(today.day) == int(r[5].split("/")[0]):
+                        if r[4] != '0':
+                            if int(today.hour) < int(r[4].split(":")[0]):
+                                answer = answer + r[2] + "," + str(r[3]) + "," + r[4] + "," + r[5] + '&'
+                            if int(today.hour) == int(r[4].split(":")[0]):
+                                if int(today.minute) < int(r[4].split(":")[1]):
+                                    answer = answer + r[2] + "," + str(r[3]) + "," + r[4] + "," + r[5] + '&'
+                                if int(today.minute) == int(r[4].split(":")[1]):
+                                    if int(today.second) < int(r[4].split(":")[2]):
+                                        answer = answer + r[2] + "," + str(r[3]) + "," + r[4] + "," + r[5] + '&'
+    return answer
+
+
+def get_all_qulity_of_sleep(email):
+    mysql = Util.connect_to_db()
+    mycursor = mysql.cursor()
+    sql = "select sleep from sleeps where email = '" + email + "'"
+    mycursor.execute(sql)
+    sleep_id = mycursor.fetchall()
+    mysql.commit()
+    Util.close_db(mysql)
+    ans = ""
+    for id in sleep_id:
+        tmp = get_sleep_str_to_send(id[0])
+        if tmp != None:
+            ans = ans +tmp
+    return ans
+
+
+
+def get_sleep_str_to_send(sleep_id):
+    mysql = Util.connect_to_db()
+    mycursor = mysql.cursor()
+    sql = "select date from sleeps where sleep = " + str(sleep_id) + ""
+    mycursor.execute(sql)
+    date = mycursor.fetchall()
+    mysql.commit()
+    Util.close_db(mysql)
+    mysql = Util.connect_to_db()
+    mycursor = mysql.cursor()
+    sql = "select min(start) from sleep_stages where sleep = " + str(sleep_id) + ""
+    mycursor.execute(sql)
+    start = mycursor.fetchall()
+    mysql.commit()
+    Util.close_db(mysql)
+    mysql = Util.connect_to_db()
+    mycursor = mysql.cursor()
+    sql = "select max(end) from sleep_stages where sleep = " + str(sleep_id) + ""
+    mycursor.execute(sql)
+    end = mycursor.fetchall()
+    mysql.commit()
+    Util.close_db(mysql)
+    datetime.datetime.minute
+    if start[0][0] != None and end[0][0] != None:
+        return str(date[0][0].day) + "/" + str(date[0][0].month) + "/" + str(date[0][0].year) + ","\
+            + start[0][0].strftime("%H:%M:%S") + "," \
+            + end[0][0].strftime("%H:%M:%S") + "&"
+
+
+def get_settings(email):
+    mysql = Util.connect_to_db()
+    mycursor = mysql.cursor()
+    sql = "select birthday,gender,height,weight from users where email = '" + email + "'"
+    mycursor.execute(sql)
+    ret = mycursor.fetchall()
+    mysql.commit()
+    Util.close_db(mysql)
+    gender = "male"
+    if ret[0][1] == 1:
+        gender = "female"
+    return str(ret[0][0].day) + "/" + str(ret[0][0].month) + "/" + str(ret[0][0].year)  \
+        + "&" + gender + "&" + str(ret[0][2]) + "&" + str(ret[0][3])
+
+
+def update_settings(email, birthday, gender, height, weight):
+    mysql = Util.connect_to_db()
+    mycursor = mysql.cursor()
+    birth = datetime.datetime.strptime(birthday, '%d/%m/%Y').date()
+    ge = 1
+    if gender == "female":
+        ge = 0
+    print(type(birth.strftime("%Y-%m-%d")))
+    sql = "update users set birthday = '" + birth.strftime("%Y-%m-%d") + "'" \
+          + ", gender = " + str(ge) + "" \
+          + ", height = " + height + "" \
+          + ", weight = " + weight + "" \
+          + " where email = '" + email + "'"
+    mycursor.execute(sql)
+    ret = mycursor.fetchall()
+    mysql.commit()
+    Util.close_db(mysql)
+
