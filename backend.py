@@ -25,8 +25,8 @@ def get_when_to_start_music(wake_up_time):
 def get_users_from_db():
     mydb = mysql.connector.connect(
         host="localhost",
-        user="artiom",
-        password="password",
+        user="root",
+        password="223333",
         database="smart_sleeper"
     )
 
@@ -122,8 +122,8 @@ def calc_sleep_quality(sleep_id):
     quality = 0
     mydb = mysql.connector.connect(
         host="localhost",
-        user="artiom",
-        password="password",
+        user="root",
+        password="223333",
         database="smart_sleeper"
     )
 
@@ -223,6 +223,44 @@ def get_alert_time(sleep_id, alarm_start):
     return alarm_start
 
 
+def update_alarm_start(rate, user):
+    if rate == 3:
+        return
+    mydb = mysql.connector.connect(
+        host="localhost",
+        user="root",
+        password="223333",
+        database="smart_sleeper"
+    )
+
+    mycursor = mydb.cursor()
+
+    mycursor.execute(f"select start_music_sec from alarm_start a where a.email = \"{user}\";")
+    alarm_start = int(mycursor.fetchall()[0][0])
+
+    if rate == 1:
+        update = -600
+    if rate == 1.5:
+        update = -300
+    if rate == 2:
+        update = -180
+    if rate == 2.5:
+        update = -60
+    if rate == 3.5:
+        update = 60
+    if rate == 4:
+        update = 180
+    if rate == 4.5:
+        update = 300
+    if rate == 5:
+        update = 600
+    sql = "UPDATE alarm_start SET start_music_sec = %s WHERE email = %s"
+    val = (max(alarm_start + update, 0), user)
+    mycursor.execute(sql, val)
+    mydb.commit()
+    mycursor.close()
+
+
 arr = get_users_from_db()
 print(get_users_from_db())
 print(get_sleep_from_db())
@@ -232,15 +270,16 @@ rec.train(get_users_from_db(), get_sleep_from_db())
 print("given time 1400 predicted time:")
 print(rec.predict_given_start_time(1400, "artten12380@gmail.com"))
 print(rec.predict_given_end_time(1431, "artten12380@gmail.com"))
+update_alarm_start(1, "artten12380@gmail.com")
 calc_sleep_quality(4)
 #get_pred(arr)
-=======
+
 def check_if_sleep_registered(milliseconds):
     mydb = mysql.connector.connect(
-    host="localhost",
-    user="artiom",
-    password="password",
-    database="smart_sleeper"
+        host="localhost",
+        user="root",
+        password="223333",
+        database="smart_sleeper"
     )
 
     mycursor = mydb.cursor()
@@ -263,10 +302,10 @@ def check_if_sleep_registered(milliseconds):
 
 def get_sleep_id_for_rating(email):
     mydb = mysql.connector.connect(
-    host="localhost",
-    user="artiom",
-    password="password",
-    database="smart_sleeper"
+        host="localhost",
+        user="root",
+        password="223333",
+        database="smart_sleeper"
     )
 
     mycursor = mydb.cursor()
