@@ -81,14 +81,16 @@ def get_reviews_from_db():
 def get_sleep_from_db():
     mydb = mysql.connector.connect(
         host="localhost",
-        user="root",
-        password="223333",
+        user="artiom",
+        password="password",
         database="smart_sleeper"
     )
 
     mycursor = mydb.cursor()
 
-    mycursor.execute("SELECT s.sleep, s.email, COALESCE(sr.rate, 3), cast((MIN(time_to_sec(ss.start)/60)) as unsigned), cast((MAX(time_to_sec(ss.end)/60)) as unsigned) FROM smart_sleeper.sleeps as s right join smart_sleeper.sleep_stages as ss on ss.sleep = s.sleep LEFT JOIN smart_sleeper.sleep_rating AS sr ON sr.sleep_id = s.sleep group by s.sleep;")
+    mycursor.execute("SELECT s.sleep, s.email, s.quality,time_to_sec((SELECT start FROM sleep_stages WHERE sleep = "
+                     "s.sleep ORDER BY start ASC LIMIT 1))/60 AS start, time_to_sec((SELECT end FROM sleep_stages"
+                     " WHERE sleep = s.sleep ORDER BY end DESC LIMIT 1))/60 as end FROM sleeps AS s;")
     result = mycursor.fetchall()
     # predict(ratings.to_numpy(), user_similarity, type='user')
 
@@ -96,10 +98,13 @@ def get_sleep_from_db():
     arr = np.array(result)
     count = 0
     for i in arr:
-        arr[count][2] = float(i[2])
-        arr[count][3] = int(i[3])
-        arr[count][4] = int(i[4])
-        count += 1
+        if not i[3] or not i[4]:
+            arr = np.delete(arr, count, 0)
+        else:
+            arr[count][2] = float(i[2])
+            arr[count][3] = int(i[3])
+            arr[count][4] = int(i[4])
+            count += 1
 
     mycursor.close()
 
@@ -205,11 +210,12 @@ def start_awakening(now, wake_time, alarm_start, time_from_rem):
         return alarm_start
     return min(alarm_start + rem_time, wake_time)
 
+
 def get_alert_time(sleep_id, alarm_start):
     mydb = mysql.connector.connect(
         host="localhost",
-        user="root",
-        password="223333",
+        user="artiom",
+        password="password",
         database="smart_sleeper"
     )
 
@@ -221,20 +227,6 @@ def get_alert_time(sleep_id, alarm_start):
     if type == 5 or type == 6:
         return alarm_start + 10
     return alarm_start
-
-
-arr = get_users_from_db()
-print(get_users_from_db())
-print(get_sleep_from_db())
-#rec = Recommender().train(get_users_from_db(), get_sleep_from_db())
-rec = Recommender()
-rec.train(get_users_from_db(), get_sleep_from_db())
-print("given time 1400 predicted time:")
-print(rec.predict_given_start_time(1400, "artten12380@gmail.com"))
-print(rec.predict_given_end_time(1431, "artten12380@gmail.com"))
-calc_sleep_quality(4)
-#get_pred(arr)
-
 
 def check_if_sleep_registered(milliseconds):
     mydb = mysql.connector.connect(
@@ -317,6 +309,7 @@ def get_wake_time(email):
                       "email = '" + email + "'" \
                       " and date = '" + d2 + "'" \
                       "group by id"
+                print(sql)
                 mycursor.execute(sql)
                 result = mycursor.fetchall()
                 mysql.commit()
@@ -337,6 +330,7 @@ def get_wake_time(email):
           "email = '" + email + "'" \
           " and day = '" + day_of_the_week + "'" \
           "group by id"
+    print(sql)
     mycursor.execute(sql)
     result = mycursor.fetchall()
     mysql.commit()
@@ -485,4 +479,53 @@ def update_settings(email, birthday, gender, height, weight):
     ret = mycursor.fetchall()
     mysql.commit()
     Util.close_db(mysql)
+
+
+def get_sleeping_time(email, wake_time):
+    wake_time_int = int(wake_time.split(":")[0]) * 60 + int(wake_time.split(":")[1])
+    ans = rec.predict_given_end_time(wake_time_int, email)
+    hour = int(ans/60)
+    minutes = int(ans % 60)
+    return str(hour).zfill(2) + ":" + str(minutes).zfill(2) + ":00"
+
+def update_alarm_start(rate, user):
+    if rate == 3:
+        return
+    mydb = mysql.connector.connect(
+        host="localhost",
+        user="artiom",
+        password="password",
+        database="smart_sleeper"
+    )
+
+    mycursor = mydb.cursor()
+
+    mycursor.execute(f"select start_music_sec from alarm_start a where a.email = '" + user + "';")
+    alarm_start = int(mycursor.fetchall()[0][0])
+
+    if rate == 1:
+        update = -600
+    if rate == 1.5:
+        update = -300
+    if rate == 2:
+        update = -180
+    if rate == 2.5:
+        update = -60
+    if rate == 3.5:
+        update = 60
+    if rate == 4:
+        update = 180
+    if rate == 4.5:
+        update = 300
+    if rate == 5:
+        update = 600
+    sql = "UPDATE alarm_start SET start_music_sec = %s WHERE email = %s"
+    val = (max(alarm_start + update, 0), user)
+    mycursor.execute(sql, val)
+    mydb.commit()
+    mycursor.close()
+
+
+rec = Recommender()
+rec.train(get_users_from_db(), get_sleep_from_db())
 
