@@ -86,8 +86,9 @@ def get_sleep_from_db():
     )
 
     mycursor = mydb.cursor()
-
-    mycursor.execute("SELECT s.sleep, s.email, COALESCE(sr.rate, 3), cast((MIN(time_to_sec(ss.start)/60)) as unsigned), cast((MAX(time_to_sec(ss.end)/60)) as unsigned) FROM smart_sleeper.sleeps as s right join smart_sleeper.sleep_stages as ss on ss.sleep = s.sleep LEFT JOIN smart_sleeper.sleep_rating AS sr ON sr.sleep_id = s.sleep group by s.sleep;")
+    # SELECT s.sleep, s.email, cast(s.quality as float), cast((MIN(time_to_sec(ss.start)/60)) as unsigned), cast((MAX(time_to_sec(ss.end)/60)) as unsigned) FROM smart_sleeper.sleeps as s right join smart_sleeper.sleep_stages as ss on ss.sleep = s.sleep group by s.sleep;
+    # mycursor.execute("SELECT s.sleep, s.email, COALESCE(sr.rate, 3), cast((MIN(time_to_sec(ss.start)/60)) as unsigned), cast((MAX(time_to_sec(ss.end)/60)) as unsigned) FROM smart_sleeper.sleeps as s right join smart_sleeper.sleep_stages as ss on ss.sleep = s.sleep LEFT JOIN smart_sleeper.sleep_rating AS sr ON sr.sleep_id = s.sleep group by s.sleep;")
+    mycursor.execute("SELECT s.sleep, s.email, cast(s.quality as float), cast((MIN(time_to_sec(ss.start)/60)) as unsigned), cast((MAX(time_to_sec(ss.end)/60)) as unsigned) FROM smart_sleeper.sleeps as s right join smart_sleeper.sleep_stages as ss on ss.sleep = s.sleep group by s.sleep;")
     result = mycursor.fetchall()
     # predict(ratings.to_numpy(), user_similarity, type='user')
 
@@ -203,6 +204,7 @@ def start_awakening(now, wake_time, alarm_start, time_from_rem):
         return alarm_start
     return min(alarm_start + rem_time, wake_time)
 
+
 def get_alert_time(sleep_id, alarm_start):
     mydb = mysql.connector.connect(
         host="localhost",
@@ -221,6 +223,42 @@ def get_alert_time(sleep_id, alarm_start):
     return alarm_start
 
 
+def update_alarm_start(rate, user):
+    if rate == 3:
+        return
+    mydb = mysql.connector.connect(
+        host="localhost",
+        user="root",
+        password="223333",
+        database="smart_sleeper"
+    )
+    mycursor = mydb.cursor()
+
+    mycursor.execute(f"select start_music_sec from alarm_start a where a.email = \"{user}\";")
+    start_music = int(mycursor.fetchall()[0][0])
+    if rate == 1:
+        update = -600
+    if rate == 1.5:
+        update = -300
+    if rate == 2:
+        update = -180
+    if rate == 2.5:
+        update = -60
+    if rate == 3.5:
+        update = 60
+    if rate == 4:
+        update = 180
+    if rate == 4.5:
+        update = 300
+    if rate == 5:
+        update = 600
+
+    sql = "UPDATE alarm_start SET start_music_sec = %s WHERE email = %s"
+    val = (max(start_music + update, 0), user)
+    mycursor.execute(sql, val)
+    mydb.commit()
+    mycursor.close()
+
 arr = get_users_from_db()
 print(get_users_from_db())
 print(get_sleep_from_db())
@@ -230,5 +268,5 @@ rec.train(get_users_from_db(), get_sleep_from_db())
 print("given time 1400 predicted time:")
 print(rec.predict_given_start_time(1400, "artten12380@gmail.com"))
 print(rec.predict_given_end_time(1431, "artten12380@gmail.com"))
+update_alarm_start(2.5, "artten12380@gmail.com")
 calc_sleep_quality(4)
-#get_pred(arr)
