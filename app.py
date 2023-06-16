@@ -296,3 +296,10 @@ def set_setting():
     weight = request.args.get('weight')
     backend.update_settings(email, birthday, gender, height, weight)
     return "ok"
+
+
+@app.route("/get_when_to_wake_up")
+def get_when_to_wake_up():
+    email = request.args.get('email')
+    sleep_time = request.args.get('sleep_time')
+    return backend.get_when_to_wake_up(email, sleep_time) + ","
