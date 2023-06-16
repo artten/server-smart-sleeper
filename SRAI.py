@@ -4,7 +4,6 @@ import mysql
 import pandas as pd
 import numpy as np
 import math
-from fastdtw import dtw
 from sklearn.metrics.pairwise import pairwise_distances
 from sklearn.cluster import KMeans
 from collections import Counter
@@ -13,19 +12,29 @@ from collections import Counter
 def get_sleep_of_user_from_db(email):
     mydb = mysql.connector.connect(
         host="localhost",
-        user="root",
-        password="223333",
+        user="artiom",
+        password="password",
         database="smart_sleeper"
     )
 
     mycursor = mydb.cursor()
 
-    mycursor.execute(f"SELECT s.sleep, s.email, cast(COALESCE(sr.rate, 3) as float), cast((MIN(time_to_sec(ss.start)/60)) as unsigned), cast((MAX(time_to_sec(ss.end)/60)) as unsigned) FROM smart_sleeper.sleeps as s right join smart_sleeper.sleep_stages as ss on ss.sleep = s.sleep LEFT JOIN smart_sleeper.sleep_rating AS sr ON sr.sleep_id = s.sleep where s.email = \"{email}\" group by s.sleep;")
+    mycursor.execute(f"SELECT s.sleep, s.email, s.quality,time_to_sec((SELECT start FROM sleep_stages WHERE sleep = "
+                     f"s.sleep ORDER BY start ASC LIMIT 1))/60 AS start, time_to_sec((SELECT end FROM sleep_stages WHERE"
+                     f" sleep = s.sleep ORDER BY end DESC LIMIT 1))/60 as end FROM sleeps AS s "
+                     f"where s.email = '{email}';")
     result = mycursor.fetchall()
     # predict(ratings.to_numpy(), user_similarity, type='user')
 
     mydb.commit()
     arr = np.array(result)
+
+    count = 0
+    for i in arr:
+        if not i[3] or not i[4]:
+            arr = np.delete(arr, count, 0)
+        else:
+            count = count + 1;
 
     mycursor.close()
 
@@ -135,6 +144,7 @@ class Recommender:
         for email in self.users_list:
             #arr[i] = sleeps[sleeps[:, 1] == email][:, 3]
             hours = np.array(sleeps[sleeps[:, 1] == email][:, 3]).astype(int)
+
             counter = Counter(hours)
             arr.append(counter)
             #if len(hours) < 10:
@@ -157,6 +167,7 @@ class Recommender:
             #    arr.append({val: 1 for val in hours})
             #else:
             #    arr.append(mass_center(hours))
+
 
         arr = np.array(arr, dtype=object)
         return arr
@@ -191,8 +202,10 @@ class Recommender:
         result = np.zeros((a, a))
         for i in range(a):
             result[i][i] = 1
+
         for i in range(a):
             for j in range(a):
+
                 result[i][j] = sim_func(matrix[i], matrix[j])
         #for i in range(a):
          #   for j in range(i + 1, a):

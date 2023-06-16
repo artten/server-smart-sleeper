@@ -4,6 +4,7 @@ from datetime import date, timedelta, datetime
 import Util
 import backend
 import mysql
+import SRAI
 
 app = Flask(__name__)
 
@@ -48,7 +49,6 @@ def register():
     result = mycursor.execute(sql, vals)
     mysql.commit()
     Util.close_db(mysql)
-    print(result)
     if not result:
         return "somthing went wrong"
     return "ok"
@@ -59,16 +59,15 @@ def add_ratings():
     email = request.args.get('email')
     rate = request.args.get('rate')
     sleep_id = backend.get_sleep_id_for_rating(email)
-    print(sleep_id)
     mysql = Util.connect_to_db()
     mycursor = mysql.cursor()
+    backend.update_alarm_start(float(rate), email)
     sql = "INSERT INTO sleep_rating (email, sleep_id, rate)" \
           " VALUES (%s, %s, %s)"
     vals = (email, sleep_id, rate)
     result = mycursor.execute(sql, vals)
     mysql.commit()
     Util.close_db(mysql)
-    print(result)
     if result:
         return "somthing went wrong"
     return "ok"
@@ -97,7 +96,6 @@ def set_alarm():
         result = mycursor.execute(sql, vals)
         mysql.commit()
         Util.close_db(mysql)
-        print(result)
         return "ok"
     except:
         return "somthing went wrong"
@@ -116,7 +114,6 @@ def add_sleep():
         password="password",
         database="smart_sleeper"
         )
-        print(backend.check_if_sleep_registered(int(wake_date)))
         if not backend.check_if_sleep_registered(int(wake_date)):
             mycursor = mydb.cursor()
             mycursor.execute("select start_music_sec from alarm_start where email = '" + email + "';")
@@ -143,6 +140,7 @@ def add_sleep():
     except Exception as e:
         print(e)
         return "not ok"
+
 
 @app.route("/add_sleep_stages")
 def add_sleep_stages():
@@ -178,6 +176,7 @@ def add_sleep_stages():
 
             mydb.commit()
             mycursor.close()
+            backend.calc_sleep_quality(sleep_id)
             return "ok"
         except Exception as e:
             # print(e)
@@ -189,6 +188,7 @@ def add_sleep_stages():
 def get_alarm():
     email = request.args.get('email')
     answer = backend.get_wake_time(email)
+    wake_time = answer
     if answer == 'not':
         return 'not'
     mysql = Util.connect_to_db()
@@ -199,10 +199,13 @@ def get_alarm():
     mysql.commit()
     Util.close_db(mysql)
     print(str(result[-1][0]))
-    answer = answer + "." + str(result[-1][0]) + ","
+    answer = answer + "." + str(result[-1][0])
     if not result:
         return "somthing went wrong"
+    # answer = answer + backend.get_waking_time(wake_time)
+    answer = answer + "." + backend.get_sleeping_time(email, wake_time) + ","
     return answer
+
 
 @app.route("/get_all_alarms")
 def get_all_alarms():
