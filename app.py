@@ -48,6 +48,62 @@ def register():
     vals = (email, password, birthday, gender, height, weight)
     result = mycursor.execute(sql, vals)
     mysql.commit()
+    sql = "INSERT INTO alarm_start (email, start_music_sec)" \
+          " VALUES (%s, %s)"
+    vals = (email, 600)
+    result = mycursor.execute(sql, vals)
+    mysql.commit()
+
+    sql = "insert into schedule (email, day, action, hour, date) " \
+          "values (%s, '%s, %s, %s, %s);"
+
+    vals = (email, "Sunday", "0", "0", "0")
+    result = mycursor.execute(sql, vals)
+    mysql.commit()
+
+    sql = "insert into schedule (email, day, action, hour, date) " \
+          "values (%s, '%s, %s, %s, %s);"
+
+    vals = (email, "Monday", "0", "0", "0")
+    result = mycursor.execute(sql, vals)
+    mysql.commit()
+
+    sql = "insert into schedule (email, day, action, hour, date) " \
+          "values (%s, '%s, %s, %s, %s);"
+
+    vals = (email, "Tuesday", "0", "0", "0")
+    result = mycursor.execute(sql, vals)
+    mysql.commit()
+
+    sql = "insert into schedule (email, day, action, hour, date) " \
+          "values (%s, '" \
+          "%s, %s, %s, %s);"
+
+    vals = (email, "Wednesday", "0", "0", "0")
+    result = mycursor.execute(sql, vals)
+    mysql.commit()
+
+    sql = "insert into schedule (email, day, action, hour, date) " \
+          "values (%s, '%s, %s, %s, %s);"
+
+    vals = (email, "Thursday", "0", "0", "0")
+    result = mycursor.execute(sql, vals)
+    mysql.commit()
+
+    sql = "insert into schedule (email, day, action, hour, date) " \
+          "values (%s, '%s, %s, %s, %s);"
+
+    vals = (email, "Friday", "0", "0", "0")
+    result = mycursor.execute(sql, vals)
+    mysql.commit()
+
+    sql = "insert into schedule (email, day, action, hour, date) " \
+          "values (%s, '%s, %s, %s, %s);"
+
+    vals = (email, "Saturday", "0", "0", "0")
+    result = mycursor.execute(sql, vals)
+    mysql.commit()
+
     Util.close_db(mysql)
     if not result:
         return "somthing went wrong"
@@ -80,6 +136,12 @@ def set_alarm():
     action = request.args.get('action')
     hour = request.args.get('hour')
     date = request.args.get('date')
+    if date == "":
+        date = 0
+    if day == "Date":
+        day = 0
+    if action == "":
+        action = 0
     try:
         # today = date.today()
         # sleep_time = datetime.strptime(wake_time, '%H:%M:%S') + timedelta(hours=-8)
@@ -223,6 +285,7 @@ def get_all_sleeps():
 def get_setting():
     email = request.args.get('email')
     return backend.get_settings(email)
+
 
 @app.route("/set_setting")
 def set_setting():
