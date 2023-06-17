@@ -495,11 +495,19 @@ def get_sleep_str_to_send(sleep_id):
     end = mycursor.fetchall()
     mysql.commit()
     Util.close_db(mysql)
+    mysql = Util.connect_to_db()
+    mycursor = mysql.cursor()
+    sql = "select quality from sleeps where sleep = " + str(sleep_id) + ""
+    mycursor.execute(sql)
+    quality = mycursor.fetchall()
+    mysql.commit()
+    Util.close_db(mysql)
     datetime.datetime.minute
     if start[0][0] != None and end[0][0] != None:
         return str(date[0][0].day) + "/" + str(date[0][0].month) + "/" + str(date[0][0].year) + ","\
             + start[0][0].strftime("%H:%M:%S") + "," \
-            + end[0][0].strftime("%H:%M:%S") + "&"
+            + end[0][0].strftime("%H:%M:%S") + ","\
+            + str(quality[0][0]) + "&"
 
 
 def get_settings(email):

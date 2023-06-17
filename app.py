@@ -202,6 +202,7 @@ def add_sleep():
             vals = [(email, wake_date, quality, min_before)]
             mycursor.executemany(sql, vals)
 
+
             mydb.commit()
 
             mycursor.execute("select max(sleep) from sleeps where email = '" + email + "';")
