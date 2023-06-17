@@ -7,15 +7,10 @@ import math
 from sklearn.metrics.pairwise import pairwise_distances
 from sklearn.cluster import KMeans
 from collections import Counter
-
+import Util
 
 def get_sleep_of_user_from_db(email):
-    mydb = mysql.connector.connect(
-        host="localhost",
-        user="artiom",
-        password="password",
-        database="smart_sleeper"
-    )
+    mydb = Util.connect_to_db()
 
     mycursor = mydb.cursor()
 
@@ -181,7 +176,6 @@ class Recommender:
         # age is similar if at the very least they are 5 years apart
         if abs(a[0] - b[0]) < years:
             similarity += (1 - (abs((a[0] - b[0]) / 1825))) * weights[0]
-            print(similarity)
         # is same gender
         if a[1] == b[1]:
             similarity += weights[1]
@@ -231,15 +225,10 @@ class Recommender:
         start_sim_mat = self.calc_similarity(sleep_mat_start, hours_array_sim)
         end_sim_mat = self.calc_similarity(sleep_mat_end, hours_array_sim)
         # self.sleep_start_sim = self.calc_similarity(sleep_mat1, dtw)
-        print(self.content_sim)
-        print(start_sim_mat)
-        print(end_sim_mat)
 
         self.similarity = self.content_sim * 0.4 + start_sim_mat * 0.3 + end_sim_mat * 0.3
         print("similarity:")
         print(self.similarity)
-        print("user_list:")
-        print(self.users_list)
 
     def predict_given_start_time(self, start_time, user):
         recommended_end_time = np.array([])
@@ -259,7 +248,9 @@ class Recommender:
         highest_sim_index = np.flip(np.argsort(self.similarity[index]))[:self.recNum]
         # highest_sim = self.similarity[index][highest_sim_index]
         sum_hour = 0
+        print(highest_sim_index)
         for ind in highest_sim_index:
             # sum_hour += recommend_sleep_time(end_time, get_sleep_of_user_from_db((self.users_list[highest_sim_index])[0]))
             sum_hour += recommend_sleep_time(end_time, get_sleep_of_user_from_db(self.users_list[ind]))
+            print(sum_hour)
         return sum_hour / self.recNum
