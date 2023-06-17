@@ -322,7 +322,10 @@ def get_wake_time(email):
         if not result[0][3]:
             return "not"
         else:
-            if str(now.hour) > result[0][4]:
+            print("result[0][4]")
+            print(result[0][4])
+            if (str(now.hour) > result[0][4].split(":")[0])\
+                    or (str(now.hour) == result[0][4].split(":")[0] and str(now.minute) > result[0][4].split(":")[1]):
                 tomorrow = today + timedelta(1)
                 print(tomorrow.weekday())
                 d2 = tomorrow.strftime("%d/%m/%Y")

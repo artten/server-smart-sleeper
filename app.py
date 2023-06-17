@@ -144,12 +144,13 @@ def set_alarm():
         day = 0
     if action == "":
         action = 0
-    if day != "Date":
+    if day != 0:
         mysql = Util.connect_to_db()
         mycursor = mysql.cursor()
 
         sql = "UPDATE schedule SET action = %s , hour = %s , date = '0'  WHERE email = %s and day = %s"
         vals = (action, hour, email, day)
+        print(sql)
         result = mycursor.execute(sql, vals)
         mysql.commit()
         Util.close_db(mysql)
@@ -166,6 +167,7 @@ def set_alarm():
 
         sql = "INSERT INTO schedule (email, day, action, hour, date)" \
               " VALUES (%s, %s, %s, %s, %s)"
+        print(sql)
         vals = (email, day, action, hour, date)
         result = mycursor.execute(sql, vals)
         mysql.commit()
@@ -273,6 +275,7 @@ def get_alarm():
     result = mycursor.fetchall()
     mysql.commit()
     Util.close_db(mysql)
+    print("here")
     print(str(result[-1][0]))
     answer = answer + "." + str(result[-1][0])
     if not result:
