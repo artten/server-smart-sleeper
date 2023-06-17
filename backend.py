@@ -23,12 +23,7 @@ def get_when_to_start_music(wake_up_time):
 
 
 def get_users_from_db():
-    mydb = mysql.connector.connect(
-        host="localhost",
-        user="artiom",
-        password="password",
-        database="smart_sleeper"
-    )
+    mydb = Util.connect_to_db()
 
     mycursor = mydb.cursor()
 
@@ -51,12 +46,7 @@ def get_users_from_db():
 
 
 def get_reviews_from_db():
-    mydb = mysql.connector.connect(
-        host="localhost",
-        user="artiom",
-        password="password",
-        database="smart_sleeper"
-    )
+    mydb = Util.connect_to_db()
 
     mycursor = mydb.cursor()
 
@@ -79,12 +69,7 @@ def get_reviews_from_db():
 
 
 def get_sleep_from_db():
-    mydb = mysql.connector.connect(
-        host="localhost",
-        user="artiom",
-        password="password",
-        database="smart_sleeper"
-    )
+    mydb = Util.connect_to_db()
 
     mycursor = mydb.cursor()
 
@@ -233,12 +218,7 @@ def get_alert_time(sleep_id, alarm_start):
 def update_alarm_start(rate, user):
     if rate == 3:
         return
-    mydb = mysql.connector.connect(
-        host="localhost",
-        user="artiom",
-        password="password",
-        database="smart_sleeper"
-    )
+    mydb = Util.connect_to_db()
 
     mycursor = mydb.cursor()
 
@@ -268,27 +248,22 @@ def update_alarm_start(rate, user):
     mycursor.close()
 
 
-arr = get_users_from_db()
-print(get_users_from_db())
-print(get_sleep_from_db())
+# arr = get_users_from_db()
+# print(get_users_from_db())
+# print(get_sleep_from_db())
 #rec = Recommender().train(get_users_from_db(), get_sleep_from_db())
 rec = Recommender()
 rec.train(get_users_from_db(), get_sleep_from_db())
-print("given time 1400 predicted time:")
-print(rec.predict_given_start_time(1400, "artten12380@gmail.com"))
-print(rec.predict_given_end_time(1431, "artten12380@gmail.com"))
-update_alarm_start(1, "artten12380@gmail.com")
-calc_sleep_quality(11)
+# print("given time 1400 predicted time:")
+# print(rec.predict_given_start_time(1400, "artten12380@gmail.com"))
+# print(rec.predict_given_end_time(1431, "artten12380@gmail.com"))
+# update_alarm_start(1, "artten12380@gmail.com")
+# calc_sleep_quality(4)
 #get_pred(arr)
 
 
 def check_if_sleep_registered(milliseconds):
-    mydb = mysql.connector.connect(
-        host="localhost",
-        user="artiom",
-        password="password",
-        database="smart_sleeper"
-    )
+    mydb = Util.connect_to_db()
 
     mycursor = mydb.cursor()
     date = datetime.datetime.fromtimestamp(milliseconds / 1000.0)
@@ -309,12 +284,7 @@ def check_if_sleep_registered(milliseconds):
 
 
 def get_sleep_id_for_rating(email):
-    mydb = mysql.connector.connect(
-        host="localhost",
-        user="artiom",
-        password="password",
-        database="smart_sleeper"
-    )
+    mydb = Util.connect_to_db()
 
     mycursor = mydb.cursor()
     sql = "SELECT max(sleep) FROM sleeps WHERE email = %s"
@@ -349,35 +319,34 @@ def get_wake_time(email):
     # return str(result[-1][0])
     print(result)
     if len(result) > 0:
-        if result[-1][3]:
+        if not result[0][3]:
             return "not"
         else:
-            if str(now.hour) < result[-1][4]:
-                return result[-1][4]
-    else:
-        tomorrow = today + timedelta(1)
-        print(tomorrow.weekday())
-        d2 = tomorrow.strftime("%d/%m/%Y")
-        mysql = Util.connect_to_db()
-        mycursor = mysql.cursor()
+            if str(now.hour) > result[0][4]:
+                tomorrow = today + timedelta(1)
+                print(tomorrow.weekday())
+                d2 = tomorrow.strftime("%d/%m/%Y")
+                mysql = Util.connect_to_db()
+                mycursor = mysql.cursor()
 
-        sql = "select * from schedule where " \
-              "email = '" + email + "'" \
-              " and date = '" + d2 + "'" \
-              "group by id"
-        mycursor.execute(sql)
-        result = mycursor.fetchall()
-        mysql.commit()
-        Util.close_db(mysql)
-        print(result)
-        if len(result) > 0:
-            if not result[-1][3]:
-                return "not"
+                sql = "select * from schedule where " \
+                      "email = '" + email + "'" \
+                      " and date = '" + d2 + "'" \
+                      "group by id"
+                print(sql)
+                mycursor.execute(sql)
+                result = mycursor.fetchall()
+                mysql.commit()
+                Util.close_db(mysql)
+                if len(result) > 0:
+                    if not result[0][3]:
+                        return "not"
+                    else:
+                        return result[0][4]
             else:
-                print("here2")
-                return result[-1][4]
+                return result[0][4]
     tomorrow = today + timedelta(1)
-    day_of_the_week = get_day_of_the_week((tomorrow.weekday() ) % 7)
+    day_of_the_week = get_day_of_the_week((tomorrow.weekday() + 1) % 7)
     mysql = Util.connect_to_db()
     mycursor = mysql.cursor()
 
@@ -385,37 +354,31 @@ def get_wake_time(email):
           "email = '" + email + "'" \
           " and day = '" + day_of_the_week + "'" \
           "group by id"
+    print(sql)
     mycursor.execute(sql)
     result = mycursor.fetchall()
-    print(sql)
-    print(result)
     mysql.commit()
     Util.close_db(mysql)
 
     if len(result) > 0:
-        if not result[-1][3]:
-            return "not"
-        else:
-            if str(now.hour) < result[-1][4]:
-                return result[-1][4]
-    else:
-        mysql = Util.connect_to_db()
-        mycursor = mysql.cursor()
-        day_of_the_week = get_day_of_the_week((tomorrow.weekday()) % 7)
-        sql = "select * from schedule where " \
-              "email = '" + email + "'" \
-                                    " and day = '" + day_of_the_week + "'" \
-                                                                       "group by id"
-        mycursor.execute(sql)
-        result = mycursor.fetchall()
-        mysql.commit()
-        Util.close_db(mysql)
-        print(sql)
         if not result[0][3]:
             return "not"
         else:
-            print("here1")
-            return result[-1][4]
+            mysql = Util.connect_to_db()
+            mycursor = mysql.cursor()
+            day_of_the_week = get_day_of_the_week((tomorrow.weekday() + 2) % 7)
+            sql = "select * from schedule where " \
+                  "email = '" + email + "'" \
+                  " and day = '" + day_of_the_week + "'" \
+                  "group by id"
+            mycursor.execute(sql)
+            result = mycursor.fetchall()
+            mysql.commit()
+            Util.close_db(mysql)
+            if not result[0][3]:
+                return "not"
+            else:
+                return result[0][4]
     return "not"
 
 
@@ -470,27 +433,43 @@ def get_all_qulity_of_sleep(email):
     sleep_id = mycursor.fetchall()
     mysql.commit()
     Util.close_db(mysql)
-    ans = ""
+    ans = get_sleep_stats(email)
     for id in sleep_id:
         tmp = get_sleep_str_to_send(id[0])
         if tmp != None:
             ans = ans +tmp
+    print(ans)
     return ans
 
 
 def get_sleep_stats(email):
     mysql = Util.connect_to_db()
     mycursor = mysql.cursor()
-    sql = "select sleep from sleeps where email = '" + email + "'"
+    sql = f"select avg(s.quality), avg(TIMESTAMPDIFF(MINUTE, (SELECT start FROM sleep_stages WHERE sleep = s.sleep ORDER BY start ASC LIMIT 1), (SELECT end FROM sleep_stages WHERE sleep = s.sleep ORDER BY end DESC LIMIT 1))) from sleeps as s where s.email = \"{email}\";"
     mycursor.execute(sql)
-    sleep_id = mycursor.fetchall()
+    stats = mycursor.fetchall()[0]
+    ans = ""
+    if stats[0] is not None:
+        ans = ans + str(round(stats[0], 1)) + ","
+    else:
+        ans = ans + "None" + ","
+    if stats[1] is not None:
+        ans = ans + str(round(stats[1], 1)) + ","
+    else:
+        ans = ans + "None" + ","
+    sql = f"select avg(s.quality), avg(TIMESTAMPDIFF(MINUTE, (SELECT start FROM sleep_stages WHERE sleep = s.sleep ORDER BY start ASC LIMIT 1), (SELECT end FROM sleep_stages WHERE sleep = s.sleep ORDER BY end DESC LIMIT 1))) from sleeps as s where s.email = \"{email}\" AND s.date >= CURDATE() - INTERVAL 7 DAY;"
+    mycursor.execute(sql)
+    stats = mycursor.fetchall()[0]
+    if stats[0] is not None:
+        ans = ans + str(round(stats[0], 1)) + ","
+    else:
+        ans = ans + "None" + ","
+    if stats[1] is not None:
+        ans = ans + str(round(stats[1], 1)) + "&"
+    else:
+        ans = ans + "None" + "&"
     mysql.commit()
     Util.close_db(mysql)
-    ans = ""
-    for id in sleep_id:
-        tmp = get_sleep_str_to_send(id[0])
-        if tmp != None:
-            ans = ans +tmp
     return ans
 
 
@@ -564,15 +543,11 @@ def get_sleeping_time(email, wake_time):
     minutes = int(ans % 60)
     return str(hour).zfill(2) + ":" + str(minutes).zfill(2) + ":00"
 
+
 def update_alarm_start(rate, user):
     if rate == 3:
         return
-    mydb = mysql.connector.connect(
-        host="localhost",
-        user="artiom",
-        password="password",
-        database="smart_sleeper"
-    )
+    mydb = Util.connect_to_db()
 
     mycursor = mydb.cursor()
 
@@ -600,14 +575,6 @@ def update_alarm_start(rate, user):
     mycursor.execute(sql, val)
     mydb.commit()
     mycursor.close()
-
-
-def get_when_to_wake_up(email, sleep_time):
-    wake_time_int = int(sleep_time.split(":")[0]) * 60 + int(sleep_time.split(":")[1])
-    ans = rec.predict_given_start_time(wake_time_int, email)
-    hour = int(ans/60)
-    minutes = int(ans % 60)
-    return str(hour).zfill(2) + ":" + str(minutes).zfill(2) + ":00"
 
 
 rec = Recommender()

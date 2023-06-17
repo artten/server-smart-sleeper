@@ -55,50 +55,49 @@ def register():
     mysql.commit()
 
     sql = "insert into schedule (email, day, action, hour, date) " \
-          "values (%s, '%s, %s, %s, %s);"
+          "values (%s, %s, %s, %s, %s);"
 
     vals = (email, "Sunday", "0", "0", "0")
     result = mycursor.execute(sql, vals)
     mysql.commit()
 
     sql = "insert into schedule (email, day, action, hour, date) " \
-          "values (%s, '%s, %s, %s, %s);"
+          "values (%s, %s, %s, %s, %s);"
 
     vals = (email, "Monday", "0", "0", "0")
     result = mycursor.execute(sql, vals)
     mysql.commit()
 
     sql = "insert into schedule (email, day, action, hour, date) " \
-          "values (%s, '%s, %s, %s, %s);"
+          "values (%s, %s, %s, %s, %s);"
 
     vals = (email, "Tuesday", "0", "0", "0")
     result = mycursor.execute(sql, vals)
     mysql.commit()
 
     sql = "insert into schedule (email, day, action, hour, date) " \
-          "values (%s, '" \
-          "%s, %s, %s, %s);"
+          "values (%s, %s, %s, %s, %s);"
 
     vals = (email, "Wednesday", "0", "0", "0")
     result = mycursor.execute(sql, vals)
     mysql.commit()
 
     sql = "insert into schedule (email, day, action, hour, date) " \
-          "values (%s, '%s, %s, %s, %s);"
+          "values (%s, %s, %s, %s, %s);"
 
     vals = (email, "Thursday", "0", "0", "0")
     result = mycursor.execute(sql, vals)
     mysql.commit()
 
     sql = "insert into schedule (email, day, action, hour, date) " \
-          "values (%s, '%s, %s, %s, %s);"
+          "values (%s, %s, %s, %s, %s);"
 
     vals = (email, "Friday", "0", "0", "0")
     result = mycursor.execute(sql, vals)
     mysql.commit()
 
     sql = "insert into schedule (email, day, action, hour, date) " \
-          "values (%s, '%s, %s, %s, %s);"
+          "values (%s, %s, %s, %s, %s);"
 
     vals = (email, "Saturday", "0", "0", "0")
     result = mycursor.execute(sql, vals)
@@ -136,12 +135,25 @@ def set_alarm():
     action = request.args.get('action')
     hour = request.args.get('hour')
     date = request.args.get('date')
+    if date == "" and day == "Date":
+        return "can't set"
     if date == "":
         date = 0
+        hour = 0
     if day == "Date":
         day = 0
     if action == "":
         action = 0
+    if day != "Date":
+        mysql = Util.connect_to_db()
+        mycursor = mysql.cursor()
+
+        sql = "UPDATE schedule SET action = %s , hour = %s , date = '0'  WHERE email = %s and day = %s"
+        vals = (action, hour, email, day)
+        result = mycursor.execute(sql, vals)
+        mysql.commit()
+        Util.close_db(mysql)
+        return "ok"
     try:
         # today = date.today()
         # sleep_time = datetime.strptime(wake_time, '%H:%M:%S') + timedelta(hours=-8)
