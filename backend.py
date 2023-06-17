@@ -577,6 +577,14 @@ def update_alarm_start(rate, user):
     mycursor.close()
 
 
+def get_when_to_wake_up(email, sleep_time):
+    wake_time_int = int(sleep_time.split(":")[0]) * 60 + int(sleep_time.split(":")[1])
+    ans = rec.predict_given_end_time(wake_time_int, email)
+    hour = int(ans / 60)
+    minutes = int(ans % 60)
+    return str(hour).zfill(2) + ":" + str(minutes).zfill(2) + ":00"
+
+
 rec = Recommender()
 rec.train(get_users_from_db(), get_sleep_from_db())
 
