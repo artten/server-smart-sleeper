@@ -110,12 +110,7 @@ def get_pred(arr):
 
 def calc_sleep_quality(sleep_id):
     quality = 0
-    mydb = mysql.connector.connect(
-        host="localhost",
-        user="artiom",
-        password="password",
-        database="smart_sleeper"
-    )
+    mydb = Util.connect_to_db()
 
     mycursor = mydb.cursor()
 
@@ -184,7 +179,7 @@ def calc_sleep_quality(sleep_id):
     val = (min(int(quality) + 1, 10), sleep_id)
     mycursor.execute(sql, val)
     mydb.commit()
-    mycursor.close()
+    Util.close_db(mydb)
 
 
 # the app asks if it should start waking up the user, the server returns how many minutes before starting the alarm
@@ -197,18 +192,13 @@ def start_awakening(now, wake_time, alarm_start, time_from_rem):
 
 
 def get_alert_time(sleep_id, alarm_start):
-    mydb = mysql.connector.connect(
-        host="localhost",
-        user="artiom",
-        password="password",
-        database="smart_sleeper"
-    )
+    mydb = Util.connect_to_db()
 
     mycursor = mydb.cursor()
 
     mycursor.execute(f"SELECT type AS appearance_count FROM sleep_stages WHERE sleep = \"{sleep_id}\" AND end >= DATE_SUB(NOW(), INTERVAL 10 MINUTE) GROUP BY type ORDER BY appearance_count DESC LIMIT 1;")
     type = int(mycursor.fetchall()[0][0])
-    mycursor.close()
+    Util.close_db(mydb)
     if type == 5 or type == 6:
         return alarm_start + 10
     return alarm_start
