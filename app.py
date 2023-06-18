@@ -135,3 +135,9 @@ def get_when_to_wake_up():
     email = request.args.get('email')
     sleep_time = request.args.get('sleep_time')
     return backend.get_when_to_wake_up(email, sleep_time) + ","
+
+
+@app.route("/get_last_sleep")
+def get_last_sleep():
+    email = request.args.get('email')
+    return backend.get_last_sleep(email)

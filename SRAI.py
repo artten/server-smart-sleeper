@@ -56,6 +56,13 @@ def dist_between_hours(h1, h2):
     return min(dist2, dist)
 
 
+def sum_hours(h1, h2):
+    sum = h1 + h2
+    if sum > Util.num_min_in_day:
+        sum -= Util.num_min_in_day
+    return sum
+
+
 def mass_center(data):
     kmeans = KMeans(init="random", n_clusters=10, tol=1)
     kmeans.fit(data.reshape(-1, 1))
@@ -79,7 +86,7 @@ def recommend_wake_time(start_time, records):
 
     relevant = np.array(relevant)
     if len(relevant) == 0:
-        return start_time + Util.min_in_8_hours
+        return sum_hours(start_time, Util.min_in_8_hours)
     return ((np.array(relevant[:, 4]).astype(float) * np.array(relevant[:, 2]).astype(float)).sum()) / (
         np.array(relevant[:, 2]).astype(float).sum())
 

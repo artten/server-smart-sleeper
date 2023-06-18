@@ -774,16 +774,60 @@ def add_rating(email, rate):
     sleep_id = get_sleep_id_for_rating(email)
     mysql = Util.connect_to_db()
     mycursor = mysql.cursor()
-    update_alarm_start(float(rate), email)
-    sql = "INSERT INTO sleep_rating (email, sleep_id, rate)" \
-          " VALUES (%s, %s, %s)"
-    vals = (email, sleep_id, rate)
-    result = mycursor.execute(sql, vals)
+    sql = "select * from sleep_rating where sleep_id = " + str(sleep_id) + ""
+    mycursor.execute(sql)
+    result = mycursor.fetchall()
     mysql.commit()
     Util.close_db(mysql)
     if result:
+        mysql = Util.connect_to_db()
+        mycursor = mysql.cursor()
+        update_alarm_start(float(rate), email)
+        sql = "UPDATE sleep_rating SET rate = %s WHERE sleep_id = %s"
+        vals = (rate, sleep_id)
+        mycursor.execute(sql, vals)
+        result = mycursor.fetchall()
+        mysql.commit()
+        Util.close_db(mysql)
+        if result:
+            return "somthing went wrong"
+        return "ok"
+    else:
+        mysql = Util.connect_to_db()
+        mycursor = mysql.cursor()
+        update_alarm_start(float(rate), email)
+        sql = "INSERT INTO sleep_rating (email, sleep_id, rate)" \
+              " VALUES (%s, %s, %s)"
+        vals = (email, sleep_id, rate)
+        mycursor.execute(sql, vals)
+        result = mycursor.fetchall()
+        mysql.commit()
+        Util.close_db(mysql)
+
+        if result:
+            return "somthing went wrong"
+        return "ok"
+
+
+def get_last_sleep(email):
+    sleep_id = get_sleep_id_for_rating(email)
+    mysql = Util.connect_to_db()
+    mycursor = mysql.cursor()
+    sql = "select min(start) from sleep_stages where sleep = " + str(sleep_id) + ""
+    mycursor.execute(sql)
+    start = mycursor.fetchall()
+    mysql.commit()
+    Util.close_db(mysql)
+    mysql = Util.connect_to_db()
+    mycursor = mysql.cursor()
+    sql = "select max(end) from sleep_stages where sleep = " + str(sleep_id) + ""
+    mycursor.execute(sql)
+    end = mycursor.fetchall()
+    mysql.commit()
+    Util.close_db(mysql)
+    if not start or not end:
         return "somthing went wrong"
-    return "ok"
+    return start[0][0].strftime("%m/%d/%Y %H:%M:%S") + "," + end[0][0].strftime("%m/%d/%Y %H:%M:%S") + "&"
 
 
 rec = Recommender()
