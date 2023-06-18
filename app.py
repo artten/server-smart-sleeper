@@ -41,91 +41,14 @@ def register():
     gender = request.args.get('gender')
     height = request.args.get('height')
     weight = request.args.get('weight')
-    mysql = Util.connect_to_db()
-    mycursor = mysql.cursor()
-    sql = "INSERT INTO users (email, password, birthday, gender, height, weight)" \
-          " VALUES (%s, %s, %s, %s, %s, %s)"
-    vals = (email, password, birthday, gender, height, weight)
-    result = mycursor.execute(sql, vals)
-    mysql.commit()
-    sql = "INSERT INTO alarm_start (email, start_music_sec)" \
-          " VALUES (%s, %s)"
-    vals = (email, 600)
-    result = mycursor.execute(sql, vals)
-    mysql.commit()
-
-    sql = "insert into schedule (email, day, action, hour, date) " \
-          "values (%s, %s, %s, %s, %s);"
-
-    vals = (email, "Sunday", "0", "0", "0")
-    result = mycursor.execute(sql, vals)
-    mysql.commit()
-
-    sql = "insert into schedule (email, day, action, hour, date) " \
-          "values (%s, %s, %s, %s, %s);"
-
-    vals = (email, "Monday", "0", "0", "0")
-    result = mycursor.execute(sql, vals)
-    mysql.commit()
-
-    sql = "insert into schedule (email, day, action, hour, date) " \
-          "values (%s, %s, %s, %s, %s);"
-
-    vals = (email, "Tuesday", "0", "0", "0")
-    result = mycursor.execute(sql, vals)
-    mysql.commit()
-
-    sql = "insert into schedule (email, day, action, hour, date) " \
-          "values (%s, %s, %s, %s, %s);"
-
-    vals = (email, "Wednesday", "0", "0", "0")
-    result = mycursor.execute(sql, vals)
-    mysql.commit()
-
-    sql = "insert into schedule (email, day, action, hour, date) " \
-          "values (%s, %s, %s, %s, %s);"
-
-    vals = (email, "Thursday", "0", "0", "0")
-    result = mycursor.execute(sql, vals)
-    mysql.commit()
-
-    sql = "insert into schedule (email, day, action, hour, date) " \
-          "values (%s, %s, %s, %s, %s);"
-
-    vals = (email, "Friday", "0", "0", "0")
-    result = mycursor.execute(sql, vals)
-    mysql.commit()
-
-    sql = "insert into schedule (email, day, action, hour, date) " \
-          "values (%s, %s, %s, %s, %s);"
-
-    vals = (email, "Saturday", "0", "0", "0")
-    result = mycursor.execute(sql, vals)
-    mysql.commit()
-
-    Util.close_db(mysql)
-    if not result:
-        return "somthing went wrong"
-    return "ok"
+    return backend.add_user(email, password, birthday, gender, height, weight)
 
 
 @app.route("/add_rating")
 def add_ratings():
     email = request.args.get('email')
     rate = request.args.get('rate')
-    sleep_id = backend.get_sleep_id_for_rating(email)
-    mysql = Util.connect_to_db()
-    mycursor = mysql.cursor()
-    backend.update_alarm_start(float(rate), email)
-    sql = "INSERT INTO sleep_rating (email, sleep_id, rate)" \
-          " VALUES (%s, %s, %s)"
-    vals = (email, sleep_id, rate)
-    result = mycursor.execute(sql, vals)
-    mysql.commit()
-    Util.close_db(mysql)
-    if result:
-        return "somthing went wrong"
-    return "ok"
+    return backend.add_rating(email,rate)
 
 
 @app.route("/set_alarm")
@@ -135,130 +58,23 @@ def set_alarm():
     action = request.args.get('action')
     hour = request.args.get('hour')
     date = request.args.get('date')
-    if date == "" and day == "Date":
-        return "can't set"
-    if date == "":
-        date = 0
-        hour = 0
-    if day == "Date":
-        day = 0
-    if action == "":
-        action = 0
-    if day != 0:
-        mysql = Util.connect_to_db()
-        mycursor = mysql.cursor()
-
-        sql = "UPDATE schedule SET action = %s , hour = %s , date = '0'  WHERE email = %s and day = %s"
-        vals = (action, hour, email, day)
-        print(sql)
-        result = mycursor.execute(sql, vals)
-        mysql.commit()
-        Util.close_db(mysql)
-        return "ok"
-    try:
-        # today = date.today()
-        # sleep_time = datetime.strptime(wake_time, '%H:%M:%S') + timedelta(hours=-8)
-        # tomorrow = today + timedelta(1)
-        # wake_date = tomorrow
-        # sleep_date = today
-        # sleep_time = str(sleep_time.time())
-        mysql = Util.connect_to_db()
-        mycursor = mysql.cursor()
-
-        sql = "INSERT INTO schedule (email, day, action, hour, date)" \
-              " VALUES (%s, %s, %s, %s, %s)"
-        print(sql)
-        vals = (email, day, action, hour, date)
-        result = mycursor.execute(sql, vals)
-        mysql.commit()
-        Util.close_db(mysql)
-        return "ok"
-    except:
-        return "somthing went wrong"
+    return backend.add_alarm(date, day, action, email, hour)
 
 
 @app.route("/add_sleep")
 def add_sleep():
-    global sleep_id
-    try:
-        email = request.args.get('email')
-        wake_date = request.args.get('wake_date')
-        quality = request.args.get('quality')
-        mydb = mysql.connector.connect(
-        host="localhost",
-        user="artiom",
-        password="password",
-        database="smart_sleeper"
-        )
-        if not backend.check_if_sleep_registered(int(wake_date)):
-            mycursor = mydb.cursor()
-            mycursor.execute("select start_music_sec from alarm_start where email = '" + email + "';")
-            result = mycursor.fetchall()
-            min_before = result[0][0]/60
-
-            wake_date = datetime.fromtimestamp(float(wake_date) / 1000.0)
-            wake_date = wake_date.strftime("%Y-%m-%d")
-
-            sql = "INSERT INTO sleeps (email, date, quality, min_before)" \
-                  " VALUES (%s, %s, %s, %s)"
-            vals = [(email, wake_date, quality, min_before)]
-            mycursor.executemany(sql, vals)
-
-
-            mydb.commit()
-
-            mycursor.execute("select max(sleep) from sleeps where email = '" + email + "';")
-            result = mycursor.fetchall()
-            mycursor.close()
-            sleep_id = result[0][0]
-            return "ok"
-        else:
-            return "not ok"
-    except Exception as e:
-        print(e)
-        return "not ok"
+    email = request.args.get('email')
+    wake_date = request.args.get('wake_date')
+    quality = request.args.get('quality')
+    backend.add_sleep(email, wake_date, quality)
 
 
 @app.route("/add_sleep_stages")
 def add_sleep_stages():
-    global sleep_id
-    if sleep_id != 0:
-        try:
-            sleep = sleep_id
-            start = request.args.get('start')
-            end = request.args.get('end')
-            sleep_type = request.args.get('sleep_type')
-            mydb = mysql.connector.connect(
-            host="localhost",
-            user="artiom",
-            password="password",
-            database="smart_sleeper"
-            )
-
-            mycursor = mydb.cursor()
-            if start == "done":
-                sleep_id = 0
-                return "need rating"
-
-            start = datetime.fromtimestamp(float(start) / 1000.0)
-            start = start.strftime("%Y-%m-%d %H:%M:%S")
-
-            end = datetime.fromtimestamp(float(end) / 1000.0)
-            end = end.strftime("%Y-%m-%d %H:%M:%S")
-
-            sql = "INSERT INTO sleep_stages (sleep, start, end, type)" \
-                  " VALUES (%s, %s, %s, %s)"
-            vals = [(sleep, start, end, sleep_type)]
-            mycursor.executemany(sql, vals)
-
-            mydb.commit()
-            mycursor.close()
-            backend.calc_sleep_quality(sleep_id)
-            return "ok"
-        except Exception as e:
-            # print(e)
-            return "not ok"
-    return "not ok no try"
+    start = request.args.get('start')
+    end = request.args.get('end')
+    sleep_type = request.args.get('sleep_type')
+    backend.add_sleep_stages(start, end, sleep_type)
 
 
 @app.route("/get_alarm")

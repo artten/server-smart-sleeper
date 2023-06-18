@@ -74,12 +74,10 @@ def recommend_wake_time(start_time, records):
     relevant = []
 
     for i in range(len(records)):
-        print(records[i][4])
         if two_hours_close(records[i][3], start_time, Util.min_in_2_hours):
             relevant.append(records[i])
 
     relevant = np.array(relevant)
-    print(relevant)
     if len(relevant) == 0:
         return start_time + Util.min_in_8_hours
     return ((np.array(relevant[:, 4]).astype(float) * np.array(relevant[:, 2]).astype(float)).sum()) / (
@@ -226,9 +224,14 @@ class Recommender:
         highest_sim_index = np.flip(np.argsort(self.similarity[index]))[:self.recNum]
         # highest_sim = self.similarity[index][highest_sim_index]
         sum_hour = 0
+        print("pred_end_time")
+        print(highest_sim_index)
         for ind in highest_sim_index:
+            print("pre")
+            print(get_sleep_of_user_from_db(self.users_list[ind]))
             sum_hour += recommend_wake_time(start_time,
-                                            get_sleep_of_user_from_db((self.users_list[highest_sim_index])[0]))
+                                            get_sleep_of_user_from_db(self.users_list[ind]))
+            print(sum_hour)
         return sum_hour / self.recNum
 
     def predict_given_end_time(self, end_time, user):
